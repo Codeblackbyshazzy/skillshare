@@ -372,9 +372,56 @@ func TestWrapGitError(t *testing.T) {
 			for k, v := range tt.envVars {
 				t.Setenv(k, v)
 			}
-			got := wrapGitError(tt.stderr, tt.err, tt.tokenAuth)
+			got := WrapGitError(tt.stderr, tt.err, tt.tokenAuth)
 			if !strings.Contains(got.Error(), tt.wantSubstr) {
-				t.Errorf("wrapGitError() = %q, want substring %q", got.Error(), tt.wantSubstr)
+				t.Errorf("WrapGitError() = %q, want substring %q", got.Error(), tt.wantSubstr)
+			}
+		})
+	}
+}
+
+func TestExtractGitFatal(t *testing.T) {
+	tests := []struct {
+		name    string
+		stderr  string
+		want    string
+	}{
+		{
+			name:   "fatal line only",
+			stderr: "fatal: repository not found",
+			want:   "repository not found",
+		},
+		{
+			name: "divergent branches with hints",
+			stderr: "hint: You have divergent branches and need to specify how to reconcile them.\n" +
+				"hint: You can do so by running one of the following commands:\n" +
+				"hint:\n" +
+				"hint:   git config pull.rebase false  # merge\n" +
+				"hint:   git config pull.rebase true   # rebase\n" +
+				"fatal: Need to specify how to reconcile divergent branches.",
+			want: "Need to specify how to reconcile divergent branches.",
+		},
+		{
+			name:   "error prefix",
+			stderr: "error: cannot pull with rebase",
+			want:   "cannot pull with rebase",
+		},
+		{
+			name:   "no fatal or hint prefix",
+			stderr: "some other git output",
+			want:   "some other git output",
+		},
+		{
+			name:   "empty string",
+			stderr: "",
+			want:   "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractGitFatal(tt.stderr)
+			if got != tt.want {
+				t.Errorf("extractGitFatal() = %q, want %q", got, tt.want)
 			}
 		})
 	}

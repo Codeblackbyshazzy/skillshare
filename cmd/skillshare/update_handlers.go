@@ -152,7 +152,11 @@ func updateTrackedRepo(uc *updateContext, repoName string) (updateResult, error)
 	}
 	if err != nil {
 		spinner.Stop()
-		ui.StepResult("error", fmt.Sprintf("Failed: %v", err), 0)
+		msg := fmt.Sprintf("Failed: %v", err)
+		if !uc.opts.force {
+			msg += " (try --force)"
+		}
+		ui.StepResult("error", msg, 0)
 		return updateResult{skipped: 1}, fmt.Errorf("git pull failed: %w", err)
 	}
 

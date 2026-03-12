@@ -2,6 +2,7 @@ package git
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -163,8 +164,15 @@ func runGitWithProgress(repoPath string, args []string, extraEnv []string, onPro
 		cmd.Env = append(os.Environ(), extraEnv...)
 	}
 
+	tokenAuth := install.UsedTokenAuth(extraEnv)
+
 	if onProgress == nil {
-		return cmd.Run()
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			return install.WrapGitError(stderr.String(), err, tokenAuth)
+		}
+		return nil
 	}
 
 	stderrPipe, err := cmd.StderrPipe()
@@ -175,10 +183,20 @@ func runGitWithProgress(repoPath string, args []string, extraEnv []string, onPro
 		return err
 	}
 
-	if err := streamGitProgress(stderrPipe, onProgress); err != nil {
-		return err
+	var allStderr strings.Builder
+	captureProgress := func(line string) {
+		allStderr.WriteString(line)
+		allStderr.WriteByte('\n')
+		onProgress(line)
 	}
-	return cmd.Wait()
+	if scanErr := streamGitProgress(stderrPipe, captureProgress); scanErr != nil {
+		_ = cmd.Wait()
+		return scanErr
+	}
+	if err := cmd.Wait(); err != nil {
+		return install.WrapGitError(allStderr.String(), err, tokenAuth)
+	}
+	return nil
 }
 
 func streamGitProgress(stderr io.Reader, onProgress func(string)) error {

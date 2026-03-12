@@ -183,10 +183,14 @@ func (s *Server) updateTrackedRepo(name, repoPath string, force, skipAudit bool)
 		info, err = git.PullWithAuth(repoPath)
 	}
 	if err != nil {
+		msg := err.Error()
+		if !force {
+			msg += " (try force update)"
+		}
 		return updateResultItem{
 			Name:    name,
 			Action:  "error",
-			Message: err.Error(),
+			Message: msg,
 			IsRepo:  true,
 		}
 	}

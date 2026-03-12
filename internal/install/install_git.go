@@ -49,7 +49,8 @@ func runGitCommandEnv(args []string, dir string, extraEnv []string) error {
 	return runGitCommandWithProgress(args, dir, extraEnv, nil)
 }
 
-func usedTokenAuth(extraEnv []string) bool {
+// UsedTokenAuth reports whether extraEnv contains token-based auth overrides.
+func UsedTokenAuth(extraEnv []string) bool {
 	for _, env := range extraEnv {
 		if strings.HasPrefix(env, "GIT_CONFIG_KEY_") && strings.Contains(env, ".insteadOf") {
 			return true
@@ -58,8 +59,8 @@ func usedTokenAuth(extraEnv []string) bool {
 	return false
 }
 
-// wrapGitError inspects stderr output to produce actionable error messages.
-func wrapGitError(stderr string, err error, tokenAuthAttempted bool) error {
+// WrapGitError inspects stderr output to produce actionable error messages.
+func WrapGitError(stderr string, err error, tokenAuthAttempted bool) error {
 	s := sanitizeTokens(strings.TrimSpace(stderr))
 	if IsSSLError(s) {
 		return fmt.Errorf("SSL certificate verification failed — options:\n"+
@@ -77,7 +78,8 @@ func wrapGitError(stderr string, err error, tokenAuthAttempted bool) error {
 			"       3. Git credential helper: gh auth login\n       %s", s)
 	}
 	if s != "" {
-		return fmt.Errorf("%s", s)
+		// Extract the fatal/error line from verbose git output, strip hint lines
+		return fmt.Errorf("%s", extractGitFatal(s))
 	}
 	// When stderr is empty, extract exit code for a more actionable message
 	var exitErr *exec.ExitError
@@ -96,6 +98,36 @@ func wrapGitError(stderr string, err error, tokenAuthAttempted bool) error {
 		}
 	}
 	return err
+}
+
+// extractGitFatal extracts the "fatal:" or "error:" line from git stderr,
+// stripping verbose "hint:" lines. If no fatal/error line is found, returns
+// the original text with hint lines removed.
+func extractGitFatal(stderr string) string {
+	var fatal string
+	var nonHint []string
+	for _, line := range strings.Split(stderr, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "hint:") {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "fatal: ") {
+			fatal = strings.TrimPrefix(trimmed, "fatal: ")
+		} else if strings.HasPrefix(trimmed, "error: ") {
+			fatal = strings.TrimPrefix(trimmed, "error: ")
+		}
+		nonHint = append(nonHint, trimmed)
+	}
+	if fatal != "" {
+		return fatal
+	}
+	if len(nonHint) > 0 {
+		return strings.Join(nonHint, "; ")
+	}
+	return stderr
 }
 
 // cloneRepo performs a git clone (quiet mode for cleaner output).

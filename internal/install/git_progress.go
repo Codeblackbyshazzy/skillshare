@@ -30,7 +30,7 @@ func runGitCommandWithProgress(args []string, dir string, extraEnv []string, onP
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr
 		if err := cmd.Run(); err != nil {
-			return wrapGitError(stderr.String(), err, usedTokenAuth(extraEnv))
+			return WrapGitError(stderr.String(), err, UsedTokenAuth(extraEnv))
 		}
 		return nil
 	}
@@ -47,7 +47,7 @@ func runGitCommandWithProgress(args []string, dir string, extraEnv []string, onP
 	waitErr := cmd.Wait()
 
 	if waitErr != nil {
-		return wrapGitError(stderrText, waitErr, usedTokenAuth(extraEnv))
+		return WrapGitError(stderrText, waitErr, UsedTokenAuth(extraEnv))
 	}
 	if scanErr != nil {
 		return scanErr

@@ -56,6 +56,7 @@ export default function UpdatePage() {
   const { toast } = useToast();
   const [selectedRepos, setSelectedRepos] = useState<Set<string>>(new Set());
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
+  const [forceUpdate, setForceUpdate] = useState(false);
   const [phase, setPhase] = useState<UpdatePhase>('idle');
   const [itemStatuses, setItemStatuses] = useState<ItemUpdateStatus[]>([]);
 
@@ -232,7 +233,38 @@ export default function UpdatePage() {
         toast(err.message, 'error');
         setPhase('done');
       },
-      { names },
+      { names, force: forceUpdate },
+    );
+  };
+
+  const handleRetryForce = (name: string) => {
+    // Mark item as in-progress
+    setItemStatuses((prev) =>
+      prev.map((s) => s.name === name ? { ...s, status: 'in-progress', message: undefined } : s)
+    );
+
+    api.updateAllStream(
+      () => {},
+      (item) => {
+        setItemStatuses((prev) =>
+          prev.map((s) => s.name === name ? {
+            ...s,
+            status: actionToStatus(item.action),
+            message: item.message,
+            auditRiskLabel: item.auditRiskLabel,
+          } : s)
+        );
+      },
+      () => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+        queryClient.invalidateQueries({ queryKey: queryKeys.skills.all });
+      },
+      (err) => {
+        setItemStatuses((prev) =>
+          prev.map((s) => s.name === name ? { ...s, status: 'error', message: err.message } : s)
+        );
+      },
+      { names: [name], force: true },
     );
   };
 
@@ -273,14 +305,17 @@ export default function UpdatePage() {
               </Button>
             )}
             {phase === 'idle' && hasUpdates && totalSelected > 0 && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleUpdate}
-              >
-                <ArrowUpCircle size={16} />
-                Update Selected ({totalSelected})
-              </Button>
+              <>
+                <Checkbox label="Force" checked={forceUpdate} onChange={setForceUpdate} />
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleUpdate}
+                >
+                  <ArrowUpCircle size={16} />
+                  Update Selected ({totalSelected})
+                </Button>
+              </>
             )}
           </>
         }
@@ -334,7 +369,7 @@ export default function UpdatePage() {
                     {item.name}
                   </span>
                   {item.message && (
-                    <span className="text-pencil-light text-sm block truncate">{item.message}</span>
+                    <span className={`text-pencil-light text-sm block ${item.status === 'error' ? 'whitespace-pre-wrap' : 'truncate'}`}>{item.message}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -343,6 +378,12 @@ export default function UpdatePage() {
                       <ShieldAlert size={12} className="mr-1" />
                       {item.auditRiskLabel}
                     </Badge>
+                  )}
+                  {item.status === 'error' && phase === 'done' && (
+                    <Button variant="secondary" size="sm" onClick={() => handleRetryForce(item.name)}>
+                      <RefreshCw size={14} />
+                      Force
+                    </Button>
                   )}
                   <StatusBadge status={item.status} />
                 </div>
