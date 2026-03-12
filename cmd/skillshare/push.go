@@ -49,14 +49,16 @@ func parsePushArgs(args []string) *pushOptions {
 
 // checkGitRepo verifies source is a git repo with remote
 func checkGitRepo(sourcePath string, spinner *ui.Spinner) error {
-	gitDir := sourcePath + "/.git"
-	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
+	cmd := exec.Command("git", "status")
+	cmd.Dir = sourcePath
+	_, err := cmd.Output()
+	if err != nil {
 		spinner.Fail("Source is not a git repository")
 		ui.Info("  Run: skillshare init --remote <url>")
 		return fmt.Errorf("not a git repository")
 	}
 
-	cmd := exec.Command("git", "remote")
+	cmd = exec.Command("git", "remote")
 	cmd.Dir = sourcePath
 	output, err := cmd.Output()
 	if err != nil || strings.TrimSpace(string(output)) == "" {
