@@ -1236,7 +1236,6 @@ func tryPullAfterRemoteSetup(sourcePath, remoteURL string) bool {
 func useSourceSubdir() string {
 	fmt.Println()
 	fmt.Println("  Specifying a subdirectory as the source will store skills in the subdirectory (e.g. skills/) instead of in the root")
-	fmt.Println()
 	fmt.Print("  Specify a subdirectory as the source (e.g. skills)? [y/N]: ")
 	var input string
 	fmt.Scanln(&input)
@@ -1244,8 +1243,7 @@ func useSourceSubdir() string {
 
 	if input == "y" || input == "yes" {
 		fmt.Print("  Enter subdirectory name: ")
-		var dirNameInput string
-		fmt.Scanln(&dirNameInput)
+		dirNameInput, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 		return strings.TrimSpace(dirNameInput)
 	}
 	return ""
