@@ -136,7 +136,7 @@ targets:
 	result := sb.RunCLI("sync", "--dry-run")
 
 	result.AssertSuccess(t)
-	result.AssertAnyOutputContains(t, "Created target directory:")
+	result.AssertAnyOutputContains(t, "Will create target directory:")
 
 	// Verify directory was NOT actually created
 	if _, err := os.Stat(targetPath); err == nil {

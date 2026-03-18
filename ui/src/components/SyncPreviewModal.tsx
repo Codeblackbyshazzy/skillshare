@@ -73,7 +73,8 @@ export default function SyncPreviewModal({ open, onClose }: SyncPreviewModalProp
       (r) =>
         (r.linked?.length ?? 0) === 0 &&
         (r.updated?.length ?? 0) === 0 &&
-        (r.pruned?.length ?? 0) === 0,
+        (r.pruned?.length ?? 0) === 0 &&
+        !r.dir_created,
     );
 
   const noTargets = results !== null && results.length === 0;

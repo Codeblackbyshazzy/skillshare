@@ -34,9 +34,7 @@ export default function SyncResultList({ results }: { results: SyncResult[] }) {
               <span className="text-pencil font-medium flex-1">{r.target}</span>
               <div className="flex gap-2 flex-wrap">
                 {r.dir_created && (
-                  <Badge variant="info">
-                    {hasChanges ? 'directory created' : 'directory will be created'}
-                  </Badge>
+                  <Badge variant="info">new directory</Badge>
                 )}
                 {linked > 0 && <Badge variant="success">{linked} linked</Badge>}
                 {updated > 0 && <Badge variant="info">{updated} updated</Badge>}

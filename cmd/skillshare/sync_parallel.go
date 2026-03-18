@@ -237,7 +237,11 @@ func collectMergeSyncResult(r *syncTargetResult, name string, target config.Targ
 	}
 
 	if result.DirCreated != "" {
-		r.infos = append(r.infos, fmt.Sprintf("Created target directory: %s", result.DirCreated))
+		verb := "Created"
+		if dryRun {
+			verb = "Will create"
+		}
+		r.infos = append(r.infos, fmt.Sprintf("%s target directory: %s", verb, result.DirCreated))
 	}
 
 	if pruneResult != nil {
@@ -284,7 +288,11 @@ func collectCopySyncResult(r *syncTargetResult, name string, target config.Targe
 	}
 
 	if result.DirCreated != "" {
-		r.infos = append(r.infos, fmt.Sprintf("Created target directory: %s", result.DirCreated))
+		verb := "Created"
+		if dryRun {
+			verb = "Will create"
+		}
+		r.infos = append(r.infos, fmt.Sprintf("%s target directory: %s", verb, result.DirCreated))
 	}
 
 	if pruneResult != nil {

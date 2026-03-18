@@ -457,7 +457,7 @@ func syncMergeMode(name string, target config.TargetConfig, source string, dryRu
 		ui.Warning("%s: prune failed: %v", name, pruneErr)
 	}
 
-	reportMergeResult(name, target, result, pruneResult)
+	reportMergeResult(name, target, result, pruneResult, dryRun)
 	return nil
 }
 
@@ -476,11 +476,11 @@ func syncMergeModeWithSkills(name string, target config.TargetConfig, source str
 		ui.Warning("%s: prune failed: %v", name, pruneErr)
 	}
 
-	reportMergeResult(name, target, result, pruneResult)
+	reportMergeResult(name, target, result, pruneResult, dryRun)
 	return mergeStats(result, pruneResult), nil
 }
 
-func reportMergeResult(name string, target config.TargetConfig, result *sync.MergeResult, pruneResult *sync.PruneResult) {
+func reportMergeResult(name string, target config.TargetConfig, result *sync.MergeResult, pruneResult *sync.PruneResult, dryRun bool) {
 	linkedCount := len(result.Linked)
 	updatedCount := len(result.Updated)
 	skippedCount := len(result.Skipped)
@@ -513,7 +513,11 @@ func reportMergeResult(name string, target config.TargetConfig, result *sync.Mer
 	}
 
 	if result.DirCreated != "" {
-		ui.Info("  Created target directory: %s", result.DirCreated)
+		verb := "Created"
+		if dryRun {
+			verb = "Will create"
+		}
+		ui.Info("  %s target directory: %s", verb, result.DirCreated)
 	}
 }
 
@@ -528,7 +532,7 @@ func syncCopyMode(name string, target config.TargetConfig, source string, dryRun
 		ui.Warning("%s: prune failed: %v", name, pruneErr)
 	}
 
-	reportCopyResult(name, target, result, pruneResult)
+	reportCopyResult(name, target, result, pruneResult, dryRun)
 	return nil
 }
 
@@ -551,7 +555,7 @@ func syncCopyModeWithSkills(name string, target config.TargetConfig, source stri
 		ui.Warning("%s: prune failed: %v", name, pruneErr)
 	}
 
-	reportCopyResult(name, target, result, pruneResult)
+	reportCopyResult(name, target, result, pruneResult, dryRun)
 	return copyStats(result, pruneResult), nil
 }
 
@@ -580,7 +584,7 @@ func copyStats(result *sync.CopyResult, prune *sync.PruneResult) syncModeStats {
 	return s
 }
 
-func reportCopyResult(name string, target config.TargetConfig, result *sync.CopyResult, pruneResult *sync.PruneResult) {
+func reportCopyResult(name string, target config.TargetConfig, result *sync.CopyResult, pruneResult *sync.PruneResult, dryRun bool) {
 	copiedCount := len(result.Copied)
 	updatedCount := len(result.Updated)
 	skippedCount := len(result.Skipped)
@@ -612,7 +616,11 @@ func reportCopyResult(name string, target config.TargetConfig, result *sync.Copy
 	}
 
 	if result.DirCreated != "" {
-		ui.Info("  Created target directory: %s", result.DirCreated)
+		verb := "Created"
+		if dryRun {
+			verb = "Will create"
+		}
+		ui.Info("  %s target directory: %s", verb, result.DirCreated)
 	}
 }
 

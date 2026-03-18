@@ -44,10 +44,10 @@ func SyncTargetCopyWithSkills(name string, target config.TargetConfig, allSkills
 	}
 	if dirCreated {
 		result.DirCreated = target.Path
-		if dryRun {
-			return result, nil // dry-run: dir would be created, skip copy details
-		}
 	}
+	// When dry-run would create the directory, suppress per-skill diagnostic
+	// messages (they flood the terminal). Counts are still populated.
+	quietDryRun := dirCreated && dryRun
 
 	// Filter skills for this target
 	discoveredSkills, err := FilterSkills(allSkills, target.Include, target.Exclude)
@@ -97,7 +97,9 @@ func SyncTargetCopyWithSkills(name string, target config.TargetConfig, allSkills
 			// If it's a symlink (leftover from merge mode), remove it
 			if utils.IsSymlinkOrJunction(targetSkillPath) {
 				if dryRun {
-					fmt.Fprintf(DiagOutput, "[dry-run] Would replace symlink with copy: %s\n", skill.FlatName)
+					if !quietDryRun {
+						fmt.Fprintf(DiagOutput, "[dry-run] Would replace symlink with copy: %s\n", skill.FlatName)
+					}
 				} else {
 					os.Remove(targetSkillPath)
 				}
@@ -108,7 +110,9 @@ func SyncTargetCopyWithSkills(name string, target config.TargetConfig, allSkills
 				if !targetInfo.IsDir() {
 					if isManaged || force {
 						if dryRun {
-							fmt.Fprintf(DiagOutput, "[dry-run] Would replace non-directory entry with copy: %s\n", skill.FlatName)
+							if !quietDryRun {
+								fmt.Fprintf(DiagOutput, "[dry-run] Would replace non-directory entry with copy: %s\n", skill.FlatName)
+							}
 						} else {
 							if err := os.RemoveAll(targetSkillPath); err != nil {
 								return nil, fmt.Errorf("failed to remove invalid entry %s: %w", skill.FlatName, err)
@@ -142,7 +146,9 @@ func SyncTargetCopyWithSkills(name string, target config.TargetConfig, allSkills
 				if isManaged || force {
 					// Managed or forced — overwrite
 					if dryRun {
-						fmt.Fprintf(DiagOutput, "[dry-run] Would update copy: %s\n", skill.FlatName)
+						if !quietDryRun {
+							fmt.Fprintf(DiagOutput, "[dry-run] Would update copy: %s\n", skill.FlatName)
+						}
 					} else {
 						if err := os.RemoveAll(targetSkillPath); err != nil {
 							return nil, fmt.Errorf("failed to remove old copy %s: %w", skill.FlatName, err)
@@ -169,7 +175,9 @@ func SyncTargetCopyWithSkills(name string, target config.TargetConfig, allSkills
 
 		// Copy skill to target
 		if dryRun {
-			fmt.Fprintf(DiagOutput, "[dry-run] Would copy: %s -> %s\n", skill.SourcePath, targetSkillPath)
+			if !quietDryRun {
+				fmt.Fprintf(DiagOutput, "[dry-run] Would copy: %s -> %s\n", skill.SourcePath, targetSkillPath)
+			}
 		} else {
 			if err := copyDirectory(skill.SourcePath, targetSkillPath); err != nil {
 				return nil, fmt.Errorf("failed to copy skill %s: %w", skill.FlatName, err)

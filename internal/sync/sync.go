@@ -467,10 +467,10 @@ func SyncTargetMergeWithSkills(name string, target config.TargetConfig, allSkill
 	}
 	if dirCreated {
 		result.DirCreated = target.Path
-		if dryRun {
-			return result, nil // dry-run: dir would be created, skip link details
-		}
 	}
+	// When dry-run would create the directory, suppress per-skill diagnostic
+	// messages (they flood the terminal). Counts are still populated.
+	quietDryRun := dirCreated && dryRun
 
 	// Filter skills for this target
 	discoveredSkills, err := FilterSkills(allSkills, target.Include, target.Exclude)
@@ -503,7 +503,9 @@ func SyncTargetMergeWithSkills(name string, target config.TargetConfig, allSkill
 
 				// Symlink points elsewhere - broken or wrong
 				if dryRun {
-					fmt.Fprintf(DiagOutput, "[dry-run] Would fix symlink: %s\n", skill.FlatName)
+					if !quietDryRun {
+						fmt.Fprintf(DiagOutput, "[dry-run] Would fix symlink: %s\n", skill.FlatName)
+					}
 				} else {
 					os.Remove(targetSkillPath)
 					if err := createLink(targetSkillPath, skill.SourcePath); err != nil {
@@ -516,7 +518,9 @@ func SyncTargetMergeWithSkills(name string, target config.TargetConfig, allSkill
 				if force {
 					// Force: replace local copy with symlink
 					if dryRun {
-						fmt.Fprintf(DiagOutput, "[dry-run] Would replace local copy: %s\n", skill.FlatName)
+						if !quietDryRun {
+							fmt.Fprintf(DiagOutput, "[dry-run] Would replace local copy: %s\n", skill.FlatName)
+						}
 					} else {
 						if err := os.RemoveAll(targetSkillPath); err != nil {
 							return nil, fmt.Errorf("failed to remove local copy %s: %w", skill.FlatName, err)
@@ -534,7 +538,9 @@ func SyncTargetMergeWithSkills(name string, target config.TargetConfig, allSkill
 		} else if os.IsNotExist(err) {
 			// Doesn't exist - create link
 			if dryRun {
-				fmt.Fprintf(DiagOutput, "[dry-run] Would create link: %s -> %s\n", targetSkillPath, skill.SourcePath)
+				if !quietDryRun {
+					fmt.Fprintf(DiagOutput, "[dry-run] Would create link: %s -> %s\n", targetSkillPath, skill.SourcePath)
+				}
 			} else {
 				if err := createLink(targetSkillPath, skill.SourcePath); err != nil {
 					return nil, fmt.Errorf("failed to create link for %s: %w", skill.FlatName, err)
