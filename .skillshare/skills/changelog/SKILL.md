@@ -141,21 +141,20 @@ git config user.name  # Should match maintainer identity
 ```
 
 If maintainer:
-- Read `specs/RELEASE_NOTES_0.16.12.md` (or the most recent existing one) as a style reference
-- Generate `specs/RELEASE_NOTES_<version>.md` (no `v` prefix, e.g. `RELEASE_NOTES_0.16.13.md`) matching that style:
+- Read the most recent `specs/RELEASE_NOTES_*.md` as a style reference
+- Generate `specs/RELEASE_NOTES_<version>.md` (no `v` prefix, e.g. `RELEASE_NOTES_0.17.6.md`)
+- Structure:
   - Title: `# skillshare vX.Y.Z Release Notes`
   - TL;DR section with numbered highlights
-  - Feature sections with "The problem" / "Solution" / "Design decisions" / "Usage patterns" structure
-  - Bug Fixes section with bold labels
-- Include migration guide if breaking changes exist
+  - One `##` section per feature/fix — describe **what changed** in plain language, with a CLI example or code block if relevant. No "The problem / Solution" structure — just state what it does now
+  - Include migration guide if breaking changes exist
 
 **RELEASE_NOTES wording rules** (same user-facing standard as CHANGELOG):
-- Bug Fixes describe **what the user experiences**, not how the code changed
+- Describe **what changed** from the user's perspective, not how the code changed
 - **Never mention**: function names, variable names, struct fields, file paths, Go syntax, internal APIs
-- ✅ Good: "fixed a potential crash when multiple browser tabs hit the dashboard"
+- ✅ Good: "Sync now auto-creates missing target directories and shows what it did"
 - ❌ Bad: "upgraded `Server.mu` from `sync.Mutex` to `sync.RWMutex` and applied a snapshot pattern across 30 handlers"
-- Feature sections ("The problem" / "Solution") may reference CLI flags and commands but not internal implementation
-- "Design decisions" can be slightly more technical but should still focus on *what* was chosen and *why*, not *how* the code works
+- Keep it concise — a short paragraph per feature is enough, no need for multi-section breakdowns
 
 If not maintainer:
 - Skip RELEASE_NOTES generation
