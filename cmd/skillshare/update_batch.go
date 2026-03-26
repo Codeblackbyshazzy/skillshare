@@ -17,6 +17,7 @@ import (
 // projectRoot == "" means global mode.
 type updateContext struct {
 	sourcePath  string
+	registryDir string // cached SourceRoot result for global mode
 	projectRoot string
 	opts        *updateOptions
 	parseOpts   install.ParseOptions
@@ -342,7 +343,7 @@ func pruneRegistry(prunedNames []string, uc *updateContext) {
 	if uc.isProject() {
 		regDir = filepath.Join(uc.projectRoot, ".skillshare")
 	} else {
-		regDir = config.SourceRoot(uc.sourcePath)
+		regDir = uc.registryDir
 	}
 
 	reg, err := config.LoadRegistry(regDir)

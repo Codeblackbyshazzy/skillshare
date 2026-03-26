@@ -184,7 +184,7 @@ func (s *Server) handleBatchUninstall(w http.ResponseWriter, r *http.Request) {
 		}
 		s.registry.Skills = filtered
 
-		regDir := config.SourceRoot(s.cfg.Source)
+		regDir := s.cfg.RegistryDir
 		if s.IsProjectMode() {
 			regDir = filepath.Join(s.projectRoot, ".skillshare")
 		}

@@ -84,6 +84,10 @@ type Config struct {
 	Log          LogConfig               `yaml:"log,omitempty"`
 	TUI          *bool                   `yaml:"tui,omitempty"` // nil = default true
 	GitLabHosts  []string                `yaml:"gitlab_hosts,omitempty"`
+
+	// RegistryDir is the resolved directory for registry.yaml (cached SourceRoot result).
+	// Set during Load(), not serialized to YAML.
+	RegistryDir string `yaml:"-"`
 }
 
 // EffectiveGitLabHosts returns GitLabHosts merged with SKILLSHARE_GITLAB_HOSTS env var.
@@ -243,9 +247,10 @@ func Load() (*Config, error) {
 		}
 	}
 
-	// Migrate registry.yaml from config dir to source dir (v0.19+)
+	// Cache SourceRoot so callers don't re-walk .git/ on every LoadRegistry call.
 	if cfg.Source != "" {
-		MigrateRegistryToSource(filepath.Dir(path), SourceRoot(cfg.Source))
+		cfg.RegistryDir = SourceRoot(cfg.Source)
+		MigrateRegistryToSource(filepath.Dir(path), cfg.RegistryDir)
 	}
 
 	return &cfg, nil

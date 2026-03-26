@@ -114,7 +114,11 @@ func ReconcileGlobalSkills(cfg *Config, reg *Registry) error {
 	}
 
 	if changed {
-		if err := reg.Save(SourceRoot(cfg.Source)); err != nil {
+		regDir := cfg.RegistryDir
+		if regDir == "" {
+			regDir = SourceRoot(cfg.Source)
+		}
+		if err := reg.Save(regDir); err != nil {
 			return err
 		}
 	}

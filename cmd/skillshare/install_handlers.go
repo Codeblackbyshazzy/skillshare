@@ -900,7 +900,7 @@ func installFromGlobalConfig(cfg *config.Config, opts install.InstallOptions) (i
 		AuditVerbose: opts.AuditVerbose,
 	}
 
-	reg, regErr := config.LoadRegistry(config.SourceRoot(cfg.Source))
+	reg, regErr := config.LoadRegistry(cfg.RegistryDir)
 	if regErr != nil {
 		return summary, fmt.Errorf("failed to load registry: %w", regErr)
 	}
