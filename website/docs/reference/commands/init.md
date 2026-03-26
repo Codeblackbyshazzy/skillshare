@@ -105,7 +105,7 @@ If you run `skillshare init` on an already-initialized setup without `--discover
 | Flag | Description |
 |------|-------------|
 | `--source, -s <path>` | Custom source directory (interactive mode prompts if not set) |
-| `--remote <url>` | Set git remote (implies `--git`; auto-pulls if remote has skills) |
+| `--remote <url>` | Set git remote (implies `--git`; auto-pulls if remote has skills; skips built-in skill prompt when remote has skills) |
 | `--project, -p` | Initialize project-level skills in current directory |
 | `--copy-from, -c <name\|path>` | Copy skills from a specific CLI or path |
 | `--no-copy` | Start with empty source (skip copy prompt) |

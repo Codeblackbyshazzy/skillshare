@@ -11,9 +11,9 @@ Directory layout and file locations for skillshare.
 ```
 ~/.config/skillshare/        # XDG_CONFIG_HOME
 ├── config.yaml              # Configuration file
-├── registry.yaml            # Installed skill registry (auto-managed)
 ├── audit-rules.yaml         # Custom audit rules (optional)
-├── skills/                  # Source directory (skills)
+├── skills/                  # Source directory (skills + registry)
+│   ├── registry.yaml        # Installed skill registry (auto-managed)
 │   ├── my-skill/            # Regular skill
 │   │   ├── SKILL.md         # Skill definition (required)
 │   │   └── .skillshare-meta.json # Install metadata (auto-generated)
@@ -104,10 +104,14 @@ See [Configuration](/docs/reference/targets/configuration) for full reference.
 ### Location
 
 ```
-~/.config/skillshare/registry.yaml
+~/.config/skillshare/skills/registry.yaml
 ```
 
-Stores metadata about installed and tracked skills. **Auto-managed** by `install`, `uninstall`, and `update` — don't edit manually.
+Stores metadata about installed and tracked skills. Lives inside the source directory so it can be synced via git for multi-machine setups. **Auto-managed** by `install`, `uninstall`, and `update` — don't edit manually.
+
+:::note Migration
+In v0.19+, `registry.yaml` moved from the config directory to the source directory. The migration is automatic on first run — no manual action needed.
+:::
 
 ### Contents
 
@@ -389,7 +393,7 @@ See [Environment Variables](./environment-variables.md#xdg_config_home) for deta
 | Item | Path |
 |------|------|
 | Config | `~/.config/skillshare/config.yaml` |
-| Registry | `~/.config/skillshare/registry.yaml` |
+| Registry | `~/.config/skillshare/skills/registry.yaml` |
 | Source | `~/.config/skillshare/skills/` |
 | Backups | `~/.local/share/skillshare/backups/` |
 | Trash | `~/.local/share/skillshare/trash/` |
@@ -403,7 +407,7 @@ See [Environment Variables](./environment-variables.md#xdg_config_home) for deta
 | Item | Path |
 |------|------|
 | Config | `%AppData%\skillshare\config.yaml` |
-| Registry | `%AppData%\skillshare\registry.yaml` |
+| Registry | `%AppData%\skillshare\skills\registry.yaml` |
 | Source | `%AppData%\skillshare\skills\` |
 | Backups | `%AppData%\skillshare\backups\` |
 | Trash | `%AppData%\skillshare\trash\` |
@@ -418,7 +422,7 @@ skillshare follows the [XDG Base Directory Specification](https://specifications
 
 | XDG Variable | Default Path | skillshare Uses For |
 |-------------|-------------|---------------------|
-| `XDG_CONFIG_HOME` | `~/.config` | `skillshare/config.yaml`, `skillshare/registry.yaml`, `skillshare/skills/` |
+| `XDG_CONFIG_HOME` | `~/.config` | `skillshare/config.yaml`, `skillshare/skills/` (includes `registry.yaml`) |
 | `XDG_DATA_HOME` | `~/.local/share` | `skillshare/backups/`, `skillshare/trash/` |
 | `XDG_STATE_HOME` | `~/.local/state` | `skillshare/logs/` |
 | `XDG_CACHE_HOME` | `~/.cache` | `skillshare/ui/` (downloaded web dashboard) |

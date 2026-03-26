@@ -15,7 +15,7 @@ Use the declarative manifest when you want reproducible skill setups across mach
 The `skills:` section in `registry.yaml` serves as a **portable declaration** of your skill collection. Instead of manually installing skills one by one, you list them in the registry and run `skillshare install` to bring everything up.
 
 ```yaml
-# ~/.config/skillshare/registry.yaml (global)
+# ~/.config/skillshare/skills/registry.yaml (global)
 # or .skillshare/registry.yaml (project)
 skills:
   - name: react-best-practices
@@ -29,8 +29,9 @@ skills:
     source: anthropics/skills/skills/commit  # no group → root level
 ```
 
-:::note Migration from config.yaml
-In older versions, `skills:` lived inside `config.yaml`. Skillshare automatically migrates it to `registry.yaml` on first load — no manual action required.
+:::note Migration notes
+- **From config.yaml**: In older versions, `skills:` lived inside `config.yaml`. Skillshare automatically migrates it to `registry.yaml` on first load.
+- **From config dir**: In v0.19+, `registry.yaml` moved from the config directory (`~/.config/skillshare/`) to the source directory (`~/.config/skillshare/skills/`) so it can be synced via git. The migration is automatic — no manual action required.
 :::
 
 ## How It Works
@@ -40,7 +41,7 @@ In older versions, `skills:` lived inside `config.yaml`. Skillshare automaticall
 Running `skillshare install` with **no arguments** reads the manifest and installs all listed skills:
 
 ```bash
-# Global mode — installs all skills from ~/.config/skillshare/registry.yaml
+# Global mode — installs all skills from ~/.config/skillshare/skills/registry.yaml
 skillshare install
 
 # Project mode — installs from .skillshare/registry.yaml
