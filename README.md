@@ -18,6 +18,10 @@
 </p>
 
 <p align="center">
+  <a href="https://trendshift.io/repositories/21835" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21835" alt="runkids%2Fskillshare | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+</p>
+
+<p align="center">
   <strong>One source of truth for AI CLI skills, rules, commands & more. Sync everywhere with one command — from personal to organization-wide.</strong><br>
   Codex, Claude Code, OpenClaw, OpenCode & 50+ more.
 </p>
