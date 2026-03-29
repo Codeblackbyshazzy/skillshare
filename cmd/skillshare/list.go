@@ -650,6 +650,7 @@ func cmdList(args []string) error {
 
 type skillEntry struct {
 	Name        string
+	Kind        string // "skill" or "agent"
 	Source      string
 	Type        string
 	InstalledAt string
@@ -663,6 +664,7 @@ type skillEntry struct {
 // skillJSON is the JSON representation for --json output.
 type skillJSON struct {
 	Name        string `json:"name"`
+	Kind        string `json:"kind,omitempty"` // "skill" or "agent"
 	RelPath     string `json:"relPath"`
 	Source      string `json:"source,omitempty"`
 	Type        string `json:"type,omitempty"`

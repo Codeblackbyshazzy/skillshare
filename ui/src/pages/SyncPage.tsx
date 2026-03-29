@@ -27,6 +27,7 @@ import { formatSyncToast, invalidateAfterSync } from '../lib/sync';
 import StreamProgressBar from '../components/StreamProgressBar';
 import SyncResultList from '../components/SyncResultList';
 import { radius, shadows } from '../design';
+import KindBadge from '../components/KindBadge';
 
 function extractIgnoreSources(data: IgnoreSources): IgnoreSources {
   return {
@@ -535,11 +536,12 @@ function DiffTargetCard({ diff }: { diff: DiffTarget }) {
   );
 }
 
-function DiffItemRow({ item }: { item: { action: string; skill: string; reason?: string } }) {
+function DiffItemRow({ item }: { item: { action: string; skill: string; reason?: string; kind?: 'skill' | 'agent' } }) {
   return (
     <div className="flex items-center gap-2 text-base py-0.5">
       <ActionBadge action={item.action} />
       <ArrowRight size={12} className="text-muted-dark shrink-0" />
+      {item.kind && <KindBadge kind={item.kind} />}
       <span className="font-mono text-pencil-light text-sm truncate">
         {item.skill}
       </span>

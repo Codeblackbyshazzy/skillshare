@@ -206,7 +206,11 @@ func skillTitleLine(e skillEntry) string {
 		// Disabled: dim the entire name + ⊘ prefix
 		return tc.Dim.Render("⊘ " + compactSkillPath(e))
 	}
-	title := colorSkillPath(compactSkillPath(e))
+	var prefix string
+	if e.Kind == "agent" {
+		prefix = tc.Cyan.Render("[A]") + " "
+	}
+	title := prefix + colorSkillPath(compactSkillPath(e))
 	if badge := skillTypeBadge(e); badge != "" {
 		return title + "  " + badge
 	}

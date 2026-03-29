@@ -5,6 +5,7 @@ import DialogShell from './DialogShell';
 import { Input, Checkbox } from './Input';
 import { radius } from '../design';
 import type { DiscoveredSkill } from '../api/client';
+import KindBadge from './KindBadge';
 
 interface SkillPickerModalProps {
   open: boolean;
@@ -162,7 +163,8 @@ export default function SkillPickerModal({
                     />
                   )}
                   <div className="min-w-0 flex-1" onClick={singleSelect ? () => toggle(skill.path) : undefined}>
-                    <span className="font-bold text-pencil text-base">
+                    <span className="font-bold text-pencil text-base inline-flex items-center gap-1.5">
+                      {skill.kind && <KindBadge kind={skill.kind} />}
                       {skill.name}
                     </span>
                     {skill.path !== '.' && skill.path !== skill.name && (

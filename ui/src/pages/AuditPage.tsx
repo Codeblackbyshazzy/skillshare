@@ -26,6 +26,7 @@ import { radius, palette } from '../design';
 import { severityBadgeVariant } from '../lib/severity';
 import { BlockStamp, RiskMeter, riskColor, riskBgColor } from '../components/audit';
 import ScrollToTop from '../components/ScrollToTop';
+import KindBadge from '../components/KindBadge';
 
 type SeverityFilter = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
 
@@ -487,6 +488,7 @@ function SkillAuditCard({ result }: { result: AuditResult; index?: number }) {
                 <ShieldCheck size={16} strokeWidth={2.5} />
               )}
             </div>
+            {result.kind && <KindBadge kind={result.kind} />}
             <span
               className="font-bold text-pencil text-lg truncate"
             >

@@ -17,11 +17,13 @@ import { api } from '../api/client';
 import type { CheckResult } from '../api/client';
 import StreamProgressBar from '../components/StreamProgressBar';
 import { radius } from '../design';
+import KindBadge from '../components/KindBadge';
 
 type UpdatePhase = 'idle' | 'updating' | 'done';
 
 interface ItemUpdateStatus {
   name: string;
+  kind?: 'skill' | 'agent';
   isRepo: boolean;
   status: 'pending' | 'in-progress' | 'success' | 'error' | 'blocked' | 'skipped';
   message?: string;
@@ -237,6 +239,7 @@ export default function UpdatePage() {
             if (idx === i) {
               return {
                 ...s,
+                kind: item.kind,
                 status: actionToStatus(item.action),
                 message: item.message,
                 auditRiskLabel: item.auditRiskLabel,
@@ -418,7 +421,8 @@ export default function UpdatePage() {
               >
                 <StatusIcon status={item.status} />
                 <div className="flex-1 min-w-0">
-                  <span className="text-pencil font-medium block">
+                  <span className="text-pencil font-medium flex items-center gap-1.5">
+                    {item.kind && <KindBadge kind={item.kind} />}
                     {item.name}
                   </span>
                   {item.message && (
@@ -565,7 +569,8 @@ export default function UpdatePage() {
                           <Checkbox label="" checked={selectedSkills.has(skill.name)} onChange={() => toggleSkill(skill.name)} />
                         </span>
                         <div className="flex-1 min-w-0">
-                          <span className="text-pencil font-medium block">
+                          <span className="text-pencil font-medium flex items-center gap-1.5">
+                            {skill.kind && <KindBadge kind={skill.kind} />}
                             {skill.name}
                           </span>
                           <span className="text-pencil-light text-sm truncate block">

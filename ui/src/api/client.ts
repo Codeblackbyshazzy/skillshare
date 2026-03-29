@@ -597,7 +597,7 @@ export interface ConfigSaveResponse {
 
 export interface DiffTarget {
   target: string;
-  items: { skill: string; action: string; reason?: string }[];
+  items: { skill: string; action: string; reason?: string; kind?: 'skill' | 'agent' }[];
   skippedCount?: number;
   collisionCount?: number;
 }
@@ -631,6 +631,7 @@ export interface InstallResult {
 
 export interface UpdateResultItem {
   name: string;
+  kind?: 'skill' | 'agent';
   action: string; // "updated", "up-to-date", "skipped", "error", "blocked"
   message?: string;
   isRepo: boolean;
@@ -663,6 +664,7 @@ export interface DiscoveredSkill {
   name: string;
   path: string;
   description?: string;
+  kind?: 'skill' | 'agent';
 }
 
 export interface DiscoverResult {
@@ -705,6 +707,7 @@ export interface LocalSkillInfo {
   targetName: string;
   size: number;
   modTime: string;
+  kind?: 'skill' | 'agent';
 }
 
 export interface CollectScanTarget {
@@ -770,6 +773,7 @@ export interface RepoCheckResult {
 
 export interface SkillCheckResult {
   name: string;
+  kind?: 'skill' | 'agent';
   source: string;
   version: string;
   status: string;
@@ -875,6 +879,7 @@ export interface AuditFinding {
 
 export interface AuditResult {
   skillName: string;
+  kind?: 'skill' | 'agent';
   findings: AuditFinding[];
   riskScore: number;
   riskLabel: 'clean' | 'low' | 'medium' | 'high' | 'critical';
