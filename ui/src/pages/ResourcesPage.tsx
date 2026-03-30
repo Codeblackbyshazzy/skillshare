@@ -794,7 +794,7 @@ export default function SkillsPage() {
         icon={<Layers size={24} strokeWidth={2.5} />}
         title="Resources"
         subtitle=""
-        className="mb-1!"
+        className="mb-4!"
         actions={
           <Link to="/skills/new">
             <Button variant="primary" size="sm">
