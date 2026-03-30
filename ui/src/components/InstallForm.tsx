@@ -578,8 +578,8 @@ export default function InstallForm({
           </div>
         </div>
       }
-      confirmLabel=""
-      cancelLabel="Cancel"
+      confirmText=""
+      cancelText="Cancel"
       onConfirm={() => setShowKindSelector(false)}
       onCancel={() => setShowKindSelector(false)}
     />

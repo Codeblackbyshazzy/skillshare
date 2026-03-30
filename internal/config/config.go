@@ -243,6 +243,23 @@ func (c *Config) EffectiveAgentsSource() string {
 	return filepath.Join(BaseDir(), "agents")
 }
 
+// HasAgentTarget reports whether any configured target has an agents path,
+// either from the user's config agents: sub-key or from the built-in defaults.
+func (c *Config) HasAgentTarget() bool {
+	builtinAgents := DefaultAgentTargets()
+	for name, tc := range c.Targets {
+		// Check user config agents: sub-key
+		if ac := tc.AgentsConfig(); ac.Path != "" {
+			return true
+		}
+		// Check built-in defaults
+		if _, ok := builtinAgents[name]; ok {
+			return true
+		}
+	}
+	return false
+}
+
 // EffectiveGitLabHosts returns GitLabHosts merged with SKILLSHARE_GITLAB_HOSTS env var.
 // Use this instead of accessing GitLabHosts directly for runtime behavior;
 // GitLabHosts contains only config-file values and is safe to persist via Save().

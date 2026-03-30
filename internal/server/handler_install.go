@@ -230,6 +230,9 @@ func (s *Server) handleInstallBatch(w http.ResponseWriter, r *http.Request) {
 	if firstErr != "" {
 		summary += " (some errors)"
 	}
+	if isAgent && installed > 0 && !s.cfg.HasAgentTarget() {
+		summary += ". Warning: none of your configured targets support agents"
+	}
 
 	status := "ok"
 	if installed < len(body.Skills) {

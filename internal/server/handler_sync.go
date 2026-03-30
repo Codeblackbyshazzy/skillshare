@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"maps"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"skillshare/internal/config"
@@ -168,6 +170,20 @@ func (s *Server) handleSync(w http.ResponseWriter, r *http.Request) {
 		"force":          body.Force,
 		"scope":          "ui",
 	}, "")
+
+	// Check if agents exist in source but no configured target supports them
+	agentsDir := s.agentsSource()
+	if agentsDir != "" && !s.cfg.HasAgentTarget() {
+		if entries, err := os.ReadDir(agentsDir); err == nil {
+			for _, e := range entries {
+				if !e.IsDir() && strings.HasSuffix(strings.ToLower(e.Name()), ".md") &&
+					!strings.HasSuffix(strings.ToLower(e.Name()), ".skillshare-meta.json") {
+					warnings = append(warnings, "Agents exist in source but none of your configured targets support agents. Agent files will not be synced.")
+					break
+				}
+			}
+		}
+	}
 
 	resp := map[string]any{
 		"results":  results,
