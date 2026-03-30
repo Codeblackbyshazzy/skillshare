@@ -804,39 +804,42 @@ export default function SkillsPage() {
         }
       />
 
-      {/* Resource type tabs */}
-      <div className="ss-segmented ss-resource-tabs flex items-center gap-2 mb-3">
+      {/* Resource type underline tabs */}
+      <nav className="ss-resource-tabs flex items-center gap-6 border-b-2 border-muted mb-3 -mx-4 px-4 md:-mx-8 md:px-8" role="tablist">
         {([
           { key: 'skills' as ResourceTab, icon: <Puzzle size={16} strokeWidth={2.5} />, label: 'Skills', count: skillItems.length },
           { key: 'agents' as ResourceTab, icon: <Bot size={16} strokeWidth={2.5} />, label: 'Agents', count: agentItems.length },
         ]).map((tab) => (
           <button
             key={tab.key}
+            role="tab"
+            aria-selected={activeTab === tab.key}
             onClick={() => { setActiveTab(tab.key); setFilterType('all'); setSearch(''); }}
             className={`
-              ss-segmented-item ss-resource-tab
-              inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium cursor-pointer
-              transition-all duration-150 border
+              ss-resource-tab
+              inline-flex items-center gap-1.5 px-1 pb-2.5 text-sm font-semibold cursor-pointer
+              transition-all duration-150 border-b-[3px] -mb-[2px]
               ${activeTab === tab.key
-                ? 'bg-surface text-pencil border-muted-dark'
-                : 'bg-transparent text-pencil-light border-muted hover:border-muted-dark hover:text-pencil'
+                ? 'border-pencil text-pencil'
+                : 'border-transparent text-pencil-light hover:text-pencil hover:border-muted-dark'
               }
             `}
-            style={{ borderRadius: 'var(--radius-md)' }}
-            aria-pressed={activeTab === tab.key}
           >
             {tab.icon}
             {tab.label}
-            <span className={`text-xs ${activeTab === tab.key ? 'opacity-60' : 'opacity-40'}`}>
+            <span className={`
+              text-[11px] font-medium px-1.5 py-0.5 rounded-[var(--radius-sm)]
+              ${activeTab === tab.key ? 'bg-pencil/10 text-pencil' : 'bg-muted text-pencil-light'}
+            `}>
               {tab.count}
             </span>
           </button>
         ))}
-      </div>
+      </nav>
 
       {/* Sticky toolbar */}
       <div ref={toolbarRef} className="sticky top-0 z-20 bg-paper -mx-4 px-4 md:-mx-8 md:px-8 pt-2 pb-4">
-        {/* Search + Sort row */}
+        {/* Search + Sort + View row */}
         <div className="flex flex-col sm:flex-row gap-3 mb-2">
           <div className="relative flex-1">
             <Search
