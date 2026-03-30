@@ -279,9 +279,11 @@ func discoverFromGitSubdirWithProgressImpl(source *Source, onProgress ProgressCa
 					commitHash = hash
 				}
 				skills := discoverSkills(subdirPath, true)
+				agents := discoverAgents(subdirPath, len(skills) > 0)
 				return &DiscoveryResult{
 					RepoPath:   tempDir,
 					Skills:     skills,
+					Agents:     agents,
 					Source:     source,
 					CommitHash: commitHash,
 					Warnings:   warnings,
@@ -306,9 +308,11 @@ func discoverFromGitSubdirWithProgressImpl(source *Source, onProgress ProgressCa
 		if dlErr == nil {
 			commitHash = hash
 			skills := discoverSkills(subdirPath, true)
+			agents := discoverAgents(subdirPath, len(skills) > 0)
 			return &DiscoveryResult{
 				RepoPath:   tempDir,
 				Skills:     skills,
+				Agents:     agents,
 				Source:     source,
 				CommitHash: commitHash,
 			}, nil
@@ -343,9 +347,11 @@ func discoverFromGitSubdirWithProgressImpl(source *Source, onProgress ProgressCa
 	}
 
 	skills := discoverSkills(subdirPath, true)
+	agents := discoverAgents(subdirPath, len(skills) > 0)
 	return &DiscoveryResult{
 		RepoPath:   tempDir,
 		Skills:     skills,
+		Agents:     agents,
 		Source:     source,
 		CommitHash: commitHash,
 		Warnings:   warnings,

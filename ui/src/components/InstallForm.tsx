@@ -293,8 +293,8 @@ export default function InstallForm({
         setDiscoveredSkills(disc.skills);
         setPendingSource(trimmed);
         setShowPicker(true);
-      } else if (disc.skills.length === 1) {
-        // Single discovered skill — install via batch
+      } else if (disc.skills.length === 1 && !hasAgents) {
+        // Single discovered skill (no agents) — install via batch
         const res = await api.installBatch({
           source: trimmed,
           skills: disc.skills,
