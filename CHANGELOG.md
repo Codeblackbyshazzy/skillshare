@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.18.5] - 2026-04-01
+
+### New Features
+
+- **`--help` for all commands** — every command now supports `--help` / `-h` to show usage info, flags, and examples. Previously, commands like `push`, `pull`, `sync`, `status`, `collect`, `doctor`, and `ui` would execute instead of showing help when `--help` was passed
+  ```bash
+  skillshare push --help     # shows usage instead of pushing
+  skillshare sync -h         # shows flags and examples
+  skillshare ui --help       # shows port/host options
+  ```
+
 ## [0.18.4] - 2026-03-31
 
 ### New Features
