@@ -218,6 +218,7 @@ func handleGitInstall(source *install.Source, cfg *config.Config, opts install.I
 			logSummary.InstalledSkills = append(logSummary.InstalledSkills, skill.Name)
 			logSummary.SkillCount = len(logSummary.InstalledSkills)
 		}
+		installDiscoveredAgents(discovery, cfg, opts)
 		return logSummary, nil
 	}
 
@@ -234,7 +235,11 @@ func handleGitInstall(source *install.Source, cfg *config.Config, opts install.I
 		return handleAgentInstall(discovery, agentsDir, opts, logSummary)
 	}
 
-	ui.StepEnd("Found", fmt.Sprintf("%d skill(s)", len(discovery.Skills)))
+	foundMsg := fmt.Sprintf("%d skill(s)", len(discovery.Skills))
+	if len(discovery.Agents) > 0 {
+		foundMsg += fmt.Sprintf(", %d agent(s)", len(discovery.Agents))
+	}
+	ui.StepEnd("Found", foundMsg)
 
 	// Apply --exclude early so excluded skills never appear in prompts
 	if len(opts.Exclude) > 0 {
@@ -302,6 +307,7 @@ func handleGitInstall(source *install.Source, cfg *config.Config, opts install.I
 			logSummary.InstalledSkills = append(logSummary.InstalledSkills, skill.Name)
 			logSummary.SkillCount = len(logSummary.InstalledSkills)
 		}
+		installDiscoveredAgents(discovery, cfg, opts)
 
 		return logSummary, nil
 	}
@@ -326,6 +332,7 @@ func handleGitInstall(source *install.Source, cfg *config.Config, opts install.I
 		logSummary.InstalledSkills = append(logSummary.InstalledSkills, batchSummary.InstalledSkills...)
 		logSummary.FailedSkills = append(logSummary.FailedSkills, batchSummary.FailedSkills...)
 		logSummary.SkillCount = len(logSummary.InstalledSkills)
+		installDiscoveredAgents(discovery, cfg, opts)
 		return logSummary, nil
 	}
 
@@ -361,6 +368,7 @@ func handleGitInstall(source *install.Source, cfg *config.Config, opts install.I
 	logSummary.InstalledSkills = append(logSummary.InstalledSkills, batchSummary.InstalledSkills...)
 	logSummary.FailedSkills = append(logSummary.FailedSkills, batchSummary.FailedSkills...)
 	logSummary.SkillCount = len(logSummary.InstalledSkills)
+	installDiscoveredAgents(discovery, cfg, opts)
 
 	return logSummary, nil
 }
@@ -1106,6 +1114,37 @@ func handleAgentInstall(discovery *install.DiscoveryResult, agentsDir string, op
 	logSummary.FailedSkills = append(logSummary.FailedSkills, batchSummary.FailedSkills...)
 	logSummary.SkillCount = len(logSummary.InstalledSkills)
 	return logSummary, nil
+}
+
+// installDiscoveredAgents installs agents from a mixed repo after skills have been installed.
+func installDiscoveredAgents(discovery *install.DiscoveryResult, cfg *config.Config, opts install.InstallOptions) {
+	if len(discovery.Agents) == 0 {
+		return
+	}
+	if opts.Kind == "skill" {
+		return
+	}
+
+	agentsDir := cfg.EffectiveAgentsSource()
+	fmt.Println()
+	ui.Header("Installing agents")
+
+	for _, agent := range discovery.Agents {
+		spinner := ui.StartSpinner(fmt.Sprintf("Installing agent %s...", agent.Name))
+		result, err := install.InstallAgentFromDiscovery(discovery, agent, agentsDir, opts)
+		spinner.Stop()
+		if err != nil {
+			ui.ErrorMsg("Failed to install agent %s: %v", agent.Name, err)
+			continue
+		}
+		if result.Action == "skipped" {
+			ui.StepSkip(agent.Name, strings.Join(result.Warnings, "; "))
+		} else if opts.DryRun {
+			ui.Warning("[dry-run] Would install agent: %s", agent.Name)
+		} else {
+			ui.SuccessMsg("Installed agent: %s", agent.Name)
+		}
+	}
 }
 
 // agentInstallResult tracks the outcome of a single agent install.

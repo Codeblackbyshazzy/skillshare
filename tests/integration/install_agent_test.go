@@ -128,3 +128,44 @@ targets: {}
 	result := sb.RunCLI("uninstall", "-g", "agents", "nonexistent")
 	result.AssertOutputNotContains(t, "unknown option")
 }
+
+func TestInstall_MixedRepo_InstallsAgentsToAgentsDir(t *testing.T) {
+	sb := testutil.NewSandbox(t)
+	defer sb.Cleanup()
+
+	sb.WriteConfig(`source: ` + sb.SourcePath + `
+targets: {}
+`)
+
+	// Create a git repo with both skills and agents
+	repoDir := filepath.Join(sb.Home, "mixed-repo")
+	os.MkdirAll(filepath.Join(repoDir, "skills", "my-skill"), 0755)
+	os.WriteFile(filepath.Join(repoDir, "skills", "my-skill", "SKILL.md"),
+		[]byte("---\nname: my-skill\n---\n# My Skill"), 0644)
+	os.MkdirAll(filepath.Join(repoDir, "agents"), 0755)
+	os.WriteFile(filepath.Join(repoDir, "agents", "my-agent.md"),
+		[]byte("# My Agent"), 0644)
+	initGitRepo(t, repoDir)
+
+	result := sb.RunCLI("install", "file://"+repoDir, "--yes")
+	result.AssertSuccess(t)
+
+	// Skill should be in skills source
+	skillPath := filepath.Join(sb.SourcePath, "my-skill")
+	if !sb.FileExists(filepath.Join(skillPath, "SKILL.md")) {
+		t.Error("skill should be installed to skills source dir")
+	}
+
+	// Agent should be in agents source (NOT skills source)
+	agentsDir := filepath.Join(filepath.Dir(sb.SourcePath), "agents")
+	agentPath := filepath.Join(agentsDir, "my-agent.md")
+	if !sb.FileExists(agentPath) {
+		t.Errorf("agent should be installed to agents dir (%s), not skills dir", agentsDir)
+	}
+
+	// Agent should NOT be in skills source
+	wrongPath := filepath.Join(sb.SourcePath, "my-agent.md")
+	if sb.FileExists(wrongPath) {
+		t.Error("agent should NOT be in skills source dir")
+	}
+}
