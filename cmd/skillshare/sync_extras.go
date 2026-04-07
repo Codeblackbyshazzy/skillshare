@@ -99,11 +99,11 @@ func cmdSyncExtrasGlobal(dryRun, force, jsonOutput bool, start time.Time) error 
 		ui.Warning("Dry run mode - no changes will be made")
 	}
 
-	var totalSynced, totalSkipped, totalPruned, totalErrors int
+	var totalSynced, totalSkipped, totalPruned, totalErrors, totalTargets int
 	var jsonEntries []syncExtrasJSONEntry
 
 	if !jsonOutput {
-		ui.Header(ui.WithModeLabel("Sync Extras"))
+		ui.Header(ui.WithModeLabel("Syncing extras"))
 	}
 
 	for _, extra := range cfg.Extras {
@@ -128,6 +128,7 @@ func cmdSyncExtrasGlobal(dryRun, force, jsonOutput bool, start time.Time) error 
 		jsonEntry := syncExtrasJSONEntry{Name: extra.Name}
 
 		for _, target := range extra.Targets {
+			totalTargets++
 			mode := target.Mode
 			if mode == "" {
 				mode = "merge"
@@ -217,6 +218,14 @@ func cmdSyncExtrasGlobal(dryRun, force, jsonOutput bool, start time.Time) error 
 		return writeJSON(&output)
 	}
 
+	ui.ExtrasSyncSummary(ui.ExtrasSyncStats{
+		Targets:  totalTargets,
+		Synced:   totalSynced,
+		Skipped:  totalSkipped,
+		Pruned:   totalPruned,
+		Duration: time.Since(start),
+	})
+
 	if totalErrors > 0 {
 		return fmt.Errorf("%d extras sync error(s)", totalErrors)
 	}
@@ -245,11 +254,11 @@ func cmdSyncExtrasProject(cwd string, dryRun, force, jsonOutput bool, start time
 		ui.Warning("Dry run mode - no changes will be made")
 	}
 
-	var totalSynced, totalSkipped, totalPruned, totalErrors int
+	var totalSynced, totalSkipped, totalPruned, totalErrors, totalTargets int
 	var jsonEntries []syncExtrasJSONEntry
 
 	if !jsonOutput {
-		ui.Header(ui.WithModeLabel("Sync Extras"))
+		ui.Header(ui.WithModeLabel("Syncing extras"))
 	}
 
 	for _, extra := range projCfg.Extras {
@@ -269,6 +278,7 @@ func cmdSyncExtrasProject(cwd string, dryRun, force, jsonOutput bool, start time
 		jsonEntry := syncExtrasJSONEntry{Name: extra.Name}
 
 		for _, target := range extra.Targets {
+			totalTargets++
 			mode := target.Mode
 			if mode == "" {
 				mode = "merge"
@@ -362,6 +372,14 @@ func cmdSyncExtrasProject(cwd string, dryRun, force, jsonOutput bool, start time
 		}
 		return writeJSON(&output)
 	}
+
+	ui.ExtrasSyncSummary(ui.ExtrasSyncStats{
+		Targets:  totalTargets,
+		Synced:   totalSynced,
+		Skipped:  totalSkipped,
+		Pruned:   totalPruned,
+		Duration: time.Since(start),
+	})
 
 	if totalErrors > 0 {
 		return fmt.Errorf("%d extras sync error(s)", totalErrors)

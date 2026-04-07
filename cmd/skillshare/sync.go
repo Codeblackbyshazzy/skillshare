@@ -122,7 +122,6 @@ func cmdSync(args []string) error {
 		if hasAll && !jsonOutput {
 			// Run project extras sync after project skills sync (text mode)
 			defer func() {
-				fmt.Println()
 				if extrasErr := cmdSyncExtras(append([]string{"-p"}, rest...)); extrasErr != nil {
 					ui.Warning("Extras sync: %v", extrasErr)
 				}
@@ -293,7 +292,6 @@ func cmdSync(args []string) error {
 	}
 
 	if hasAll {
-		fmt.Println()
 		if extrasErr := cmdSyncExtras(rest); extrasErr != nil {
 			ui.Warning("Extras sync: %v", extrasErr)
 		}

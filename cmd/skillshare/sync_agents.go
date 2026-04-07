@@ -16,7 +16,7 @@ import (
 
 // agentSyncStats aggregates per-target agent sync results.
 type agentSyncStats struct {
-	linked, skipped, updated, pruned int
+	linked, local, updated, pruned int
 }
 
 // syncAgentsGlobal discovers agents and syncs them to all agent-capable targets.
@@ -60,6 +60,7 @@ func syncAgentsGlobal(cfg *config.Config, dryRun, force, jsonOutput bool, start 
 	var totals agentSyncStats
 	var syncErr error
 	var skippedTargets []string
+	var targetCount int
 
 	for name := range cfg.Targets {
 		agentPath := resolveAgentTargetPath(cfg.Targets[name], builtinAgents, name)
@@ -67,6 +68,7 @@ func syncAgentsGlobal(cfg *config.Config, dryRun, force, jsonOutput bool, start 
 			skippedTargets = append(skippedTargets, name)
 			continue
 		}
+		targetCount++
 
 		tc := cfg.Targets[name]
 		ac := tc.AgentsConfig()
@@ -75,16 +77,20 @@ func syncAgentsGlobal(cfg *config.Config, dryRun, force, jsonOutput bool, start 
 			syncErr = fmt.Errorf("some agent targets failed to sync")
 		}
 		totals.linked += stats.linked
-		totals.skipped += stats.skipped
+		totals.local += stats.local
 		totals.updated += stats.updated
 		totals.pruned += stats.pruned
 	}
 
 	if !jsonOutput {
-		fmt.Println()
-		ui.Info("Agent sync: %d linked, %d local, %d updated, %d pruned (%s)",
-			totals.linked, totals.skipped, totals.updated, totals.pruned,
-			formatDuration(start))
+		ui.AgentSyncSummary(ui.AgentSyncStats{
+			Targets:  targetCount,
+			Linked:   totals.linked,
+			Local:    totals.local,
+			Updated:  totals.updated,
+			Pruned:   totals.pruned,
+			Duration: time.Since(start),
+		})
 		if len(skippedTargets) > 0 {
 			sort.Strings(skippedTargets)
 			ui.Warning("%d target(s) skipped for agents (no agents path): %s",
@@ -135,7 +141,7 @@ func syncAgentsProject(projectRoot string, dryRun, force, jsonOutput bool, start
 	}
 
 	if !jsonOutput {
-		ui.Header("Syncing project agents")
+		ui.Header("Syncing agents (project)")
 		if dryRun {
 			ui.Warning("Dry run mode - no changes will be made")
 		}
@@ -145,6 +151,7 @@ func syncAgentsProject(projectRoot string, dryRun, force, jsonOutput bool, start
 	var totals agentSyncStats
 	var syncErr error
 	var skippedTargets []string
+	var targetCount int
 
 	// Load project config for target list
 	projCfg, loadErr := config.LoadProject(projectRoot)
@@ -158,6 +165,7 @@ func syncAgentsProject(projectRoot string, dryRun, force, jsonOutput bool, start
 			skippedTargets = append(skippedTargets, entry.Name)
 			continue
 		}
+		targetCount++
 
 		ac := entry.AgentsConfig()
 		stats, targetErr := syncAgentTarget(entry.Name, agentPath, ac.Mode, agents, agentsSource, dryRun, force, jsonOutput)
@@ -165,16 +173,20 @@ func syncAgentsProject(projectRoot string, dryRun, force, jsonOutput bool, start
 			syncErr = fmt.Errorf("some agent targets failed to sync")
 		}
 		totals.linked += stats.linked
-		totals.skipped += stats.skipped
+		totals.local += stats.local
 		totals.updated += stats.updated
 		totals.pruned += stats.pruned
 	}
 
 	if !jsonOutput {
-		fmt.Println()
-		ui.Info("Project agent sync: %d linked, %d local, %d updated, %d pruned (%s)",
-			totals.linked, totals.skipped, totals.updated, totals.pruned,
-			formatDuration(start))
+		ui.AgentSyncSummary(ui.AgentSyncStats{
+			Targets:  targetCount,
+			Linked:   totals.linked,
+			Local:    totals.local,
+			Updated:  totals.updated,
+			Pruned:   totals.pruned,
+			Duration: time.Since(start),
+		})
 		if len(skippedTargets) > 0 {
 			sort.Strings(skippedTargets)
 			ui.Warning("%d target(s) skipped for agents (no agents path): %s",
@@ -211,7 +223,7 @@ func syncAgentTarget(name, agentPath, modeOverride string, agents []resource.Dis
 
 	stats := agentSyncStats{
 		linked:  len(result.Linked),
-		skipped: len(result.Skipped),
+		local:   len(result.Skipped),
 		updated: len(result.Updated),
 		pruned:  len(pruned),
 	}
@@ -227,9 +239,9 @@ func syncAgentTarget(name, agentPath, modeOverride string, agents []resource.Dis
 func reportAgentSyncResult(name, mode string, stats agentSyncStats, dryRun bool) {
 	if stats.linked > 0 || stats.updated > 0 || stats.pruned > 0 {
 		ui.Success("%s: agents %s (%d linked, %d local, %d updated, %d pruned)",
-			name, mode, stats.linked, stats.skipped, stats.updated, stats.pruned)
-	} else if stats.skipped > 0 {
-		ui.Success("%s: agents %s (%d local preserved)", name, mode, stats.skipped)
+			name, mode, stats.linked, stats.local, stats.updated, stats.pruned)
+	} else if stats.local > 0 {
+		ui.Success("%s: agents %s (%d local preserved)", name, mode, stats.local)
 	} else {
 		ui.Success("%s: agents %s (up to date)", name, mode)
 	}

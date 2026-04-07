@@ -45,7 +45,7 @@ extras:
 	result := sb.RunCLI("sync", "extras")
 
 	result.AssertSuccess(t)
-	result.AssertAnyOutputContains(t, "Sync Extras")
+	result.AssertAnyOutputContains(t, "Syncing extras")
 	result.AssertAnyOutputContains(t, "2 files")
 
 	// Verify files are symlinks
@@ -99,7 +99,7 @@ extras:
 	result := sb.RunCLI("sync", "extras")
 
 	result.AssertSuccess(t)
-	result.AssertAnyOutputContains(t, "Sync Extras")
+	result.AssertAnyOutputContains(t, "Syncing extras")
 
 	// Verify file exists and is a real copy (not a symlink)
 	copiedFile := filepath.Join(rulesTarget, "coding.md")
@@ -226,7 +226,7 @@ extras:
 	result.AssertAnyOutputContains(t, "merged")
 
 	// Verify extras sync happened
-	result.AssertAnyOutputContains(t, "Sync Extras")
+	result.AssertAnyOutputContains(t, "Syncing extras")
 
 	// Verify skill symlink
 	if !sb.IsSymlink(filepath.Join(targetPath, "my-skill")) {
