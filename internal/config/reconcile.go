@@ -3,135 +3,29 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"skillshare/internal/install"
-	"skillshare/internal/utils"
 )
 
 // ReconcileGlobalSkills scans the global source directory for remotely-installed
 // skills (those with install metadata or tracked repos) and ensures they are
-// present in the MetadataStore. This is the global-mode counterpart of
-// ReconcileProjectSkills.
+// present in the MetadataStore.
 func ReconcileGlobalSkills(cfg *Config, store *install.MetadataStore) error {
 	sourcePath := cfg.Source
 	if _, err := os.Stat(sourcePath); os.IsNotExist(err) {
-		return nil // no skills dir yet
+		return nil
 	}
 
-	changed := false
-
-	walkRoot := utils.ResolveSymlink(sourcePath)
-	live := map[string]bool{} // tracks skills actually found on disk
-	err := filepath.WalkDir(walkRoot, func(path string, d os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return nil
-		}
-		if path == walkRoot {
-			return nil
-		}
-		if !d.IsDir() {
-			return nil
-		}
-		if utils.IsHidden(d.Name()) {
-			return filepath.SkipDir
-		}
-		if d.Name() == ".git" {
-			return filepath.SkipDir
-		}
-
-		relPath, relErr := filepath.Rel(walkRoot, path)
-		if relErr != nil {
-			return nil
-		}
-
-		fullPath := filepath.ToSlash(relPath)
-
-		// Extract group from the relative path (e.g. "frontend/foo" → "frontend").
-		group := ""
-		if idx := strings.LastIndex(fullPath, "/"); idx >= 0 {
-			group = fullPath[:idx]
-		}
-
-		var source string
-		tracked := isGitRepo(path)
-
-		// Look up using GetByPath which handles both full-path keys and
-		// legacy basename keys (for backward compatibility during migration).
-		existing := store.GetByPath(fullPath)
-		if existing != nil && existing.Source != "" {
-			source = existing.Source
-		} else if tracked {
-			source = gitRemoteOrigin(path)
-		}
-		if source == "" {
-			return nil
-		}
-
-		live[fullPath] = true
-
-		// Determine branch: from store entry or git (tracked repos)
-		var branch string
-		if existing != nil && existing.Branch != "" {
-			branch = existing.Branch
-		} else if tracked {
-			branch = gitCurrentBranch(path)
-		}
-
-		if existing != nil {
-			if store.MigrateLegacyKey(fullPath, existing) {
-				changed = true
-			}
-			if existing.Source != source {
-				existing.Source = source
-				changed = true
-			}
-			if existing.Tracked != tracked {
-				existing.Tracked = tracked
-				changed = true
-			}
-			if existing.Branch != branch {
-				existing.Branch = branch
-				changed = true
-			}
-			if existing.Group != group {
-				existing.Group = group
-				changed = true
-			}
-		} else {
-			entry := &install.MetadataEntry{
-				Source:  source,
-				Tracked: tracked,
-				Branch:  branch,
-				Group:   group,
-			}
-			store.Set(fullPath, entry)
-			changed = true
-		}
-
-		if tracked {
-			return filepath.SkipDir
-		}
-		if existing != nil && existing.Source != "" {
-			return filepath.SkipDir
-		}
-
-		return nil
-	})
+	result, err := reconcileSkillsWalk(sourcePath, store, nil)
 	if err != nil {
 		return fmt.Errorf("failed to scan global skills: %w", err)
 	}
 
-	// Prune stale entries: skills in store but no longer on disk
-	for _, name := range store.List() {
-		if !live[name] {
-			store.Remove(name)
-			changed = true
-		}
+	if pruneStaleEntries(store, result.live) {
+		result.changed = true
 	}
 
-	if changed {
+	if result.changed {
 		if err := store.Save(sourcePath); err != nil {
 			return err
 		}
