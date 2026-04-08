@@ -215,6 +215,7 @@ func cmdUpdate(args []string) error {
 		// Recursive discovery for --all
 		scanSpinner := ui.StartSpinner("Scanning skills...")
 		walkRoot := utils.ResolveSymlink(cfg.Source)
+		metaStore, _ := install.LoadMetadataWithMigration(cfg.Source, "")
 		err := filepath.Walk(walkRoot, func(path string, info os.FileInfo, err error) error {
 			if err != nil || path == walkRoot {
 				return nil
@@ -241,12 +242,11 @@ func cmdUpdate(args []string) error {
 			// Regular skill
 			if !info.IsDir() && info.Name() == "SKILL.md" {
 				skillDir := filepath.Dir(path)
-				meta, metaErr := install.ReadMeta(skillDir)
-				if metaErr == nil && meta != nil && meta.Source != "" {
-					rel, _ := filepath.Rel(walkRoot, skillDir)
-					if rel != "." && !seen[rel] {
+				rel, _ := filepath.Rel(walkRoot, skillDir)
+				if rel != "." && !seen[rel] {
+					if entry := metaStore.Get(rel); entry != nil && entry.Source != "" {
 						seen[rel] = true
-						targets = append(targets, updateTarget{name: rel, path: skillDir, isRepo: false, meta: meta})
+						targets = append(targets, updateTarget{name: rel, path: skillDir, isRepo: false, meta: entry})
 					}
 				}
 			}

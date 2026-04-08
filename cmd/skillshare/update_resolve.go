@@ -12,10 +12,10 @@ import (
 )
 
 type updateTarget struct {
-	name   string             // relative path from source dir (display name)
-	path   string             // absolute path on disk
-	isRepo bool               // true for tracked repos (_-prefixed git repos)
-	meta   *install.SkillMeta // cached metadata; nil for tracked repos
+	name   string                 // relative path from source dir (display name)
+	path   string                 // absolute path on disk
+	isRepo bool                   // true for tracked repos (_-prefixed git repos)
+	meta   *install.MetadataEntry // cached metadata; nil for tracked repos
 }
 
 // resolveByBasename searches nested skills and tracked repos by their
@@ -122,9 +122,10 @@ func resolveGroupUpdatable(group, sourceDir string) ([]updateTarget, error) {
 			return filepath.SkipDir
 		}
 
-		// Skill with metadata (has .skillshare-meta.json)
-		if meta, metaErr := install.ReadMeta(path); metaErr == nil && meta != nil && meta.Source != "" {
-			matches = append(matches, updateTarget{name: rel, path: path, isRepo: false, meta: meta})
+		// Skill with metadata (centralized store)
+		store, _ := install.LoadMetadata(resolvedSourceDir)
+		if entry := store.Get(rel); entry != nil && entry.Source != "" {
+			matches = append(matches, updateTarget{name: rel, path: path, isRepo: false, meta: entry})
 			return filepath.SkipDir
 		}
 
@@ -150,7 +151,8 @@ func isGroupDir(name, sourceDir string) bool {
 		return false
 	}
 	// Not a skill with metadata
-	if meta, metaErr := install.ReadMeta(path); metaErr == nil && meta != nil && meta.Source != "" {
+	store, _ := install.LoadMetadata(sourceDir)
+	if entry := store.Get(name); entry != nil && entry.Source != "" {
 		return false
 	}
 	// Not a skill directory (has SKILL.md)
