@@ -126,7 +126,7 @@ func (s *Server) handleUpdate(w http.ResponseWriter, r *http.Request) {
 func (s *Server) updateSingle(name string, force, skipAudit bool) updateResultItem {
 	// Try exact skill path first (prevents basename collision with nested repos)
 	skillPath := filepath.Join(s.cfg.Source, name)
-	if meta, _ := install.ReadMeta(skillPath); meta != nil && meta.Source != "" {
+	if entry := s.skillsStore.Get(name); entry != nil && entry.Source != "" {
 		return s.updateRegularSkill(name, skillPath, skipAudit)
 	}
 
@@ -262,8 +262,11 @@ func (s *Server) auditGateTrackedRepo(name, repoPath, beforeHash, threshold stri
 }
 
 func (s *Server) updateRegularSkill(name, skillPath string, skipAudit bool) updateResultItem {
-	meta, _ := install.ReadMeta(skillPath)
-	source, err := install.ParseSourceWithOptions(meta.Source, s.parseOpts())
+	entry := s.skillsStore.Get(name)
+	if entry == nil {
+		return updateResultItem{Name: name, Action: "error", Message: "no metadata found"}
+	}
+	source, err := install.ParseSourceWithOptions(entry.Source, s.parseOpts())
 	if err != nil {
 		return updateResultItem{
 			Name:    name,
@@ -315,7 +318,7 @@ func (s *Server) updateAll(force, skipAudit bool) []updateResultItem {
 	}
 
 	// Update regular skills with source metadata
-	skills, err := getServerUpdatableSkills(s.cfg.Source)
+	skills, err := getServerUpdatableSkills(s.cfg.Source, s.skillsStore)
 	if err == nil {
 		for _, skill := range skills {
 			skillPath := filepath.Join(s.cfg.Source, skill)
@@ -328,7 +331,7 @@ func (s *Server) updateAll(force, skipAudit bool) []updateResultItem {
 
 // getServerUpdatableSkills returns relative paths of skills that have metadata with a remote source.
 // It walks the source directory recursively to find nested skills (e.g. utils/ascii-box-check).
-func getServerUpdatableSkills(sourceDir string) ([]string, error) {
+func getServerUpdatableSkills(sourceDir string, store *install.MetadataStore) ([]string, error) {
 	var skills []string
 	walkRoot := utils.ResolveSymlink(sourceDir)
 	err := filepath.WalkDir(walkRoot, func(path string, d os.DirEntry, err error) error {
@@ -351,8 +354,12 @@ func getServerUpdatableSkills(sourceDir string) ([]string, error) {
 			return filepath.SkipDir
 		}
 		// Check if this directory has updatable metadata
-		meta, metaErr := install.ReadMeta(path)
-		if metaErr != nil || meta == nil || meta.Source == "" {
+		relName := filepath.Base(path)
+		if relP, relErr2 := filepath.Rel(walkRoot, path); relErr2 == nil {
+			relName = filepath.ToSlash(relP)
+		}
+		entry := store.Get(relName)
+		if entry == nil || entry.Source == "" {
 			return nil // continue walking into subdirectories
 		}
 		relPath, relErr := filepath.Rel(walkRoot, path)

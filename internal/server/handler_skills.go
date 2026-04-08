@@ -76,13 +76,15 @@ func (s *Server) handleListSkills(w http.ResponseWriter, r *http.Request) {
 				Disabled:   d.Disabled,
 			}
 
-			if meta, _ := install.ReadMeta(d.SourcePath); meta != nil {
-				item.InstalledAt = meta.InstalledAt.Format(time.RFC3339)
-				item.Source = meta.Source
-				item.Type = meta.Type
-				item.RepoURL = meta.RepoURL
-				item.Version = meta.Version
-				item.Branch = meta.Branch
+			if entry := s.skillsStore.Get(filepath.Base(d.SourcePath)); entry != nil {
+				if !entry.InstalledAt.IsZero() {
+					item.InstalledAt = entry.InstalledAt.Format(time.RFC3339)
+				}
+				item.Source = entry.Source
+				item.Type = entry.Type
+				item.RepoURL = entry.RepoURL
+				item.Version = entry.Version
+				item.Branch = entry.Branch
 			}
 			enrichSkillBranch(&item)
 
@@ -155,13 +157,15 @@ func (s *Server) handleGetSkill(w http.ResponseWriter, r *http.Request) {
 			Disabled:   d.Disabled,
 		}
 
-		if meta, _ := install.ReadMeta(d.SourcePath); meta != nil {
-			item.InstalledAt = meta.InstalledAt.Format("2006-01-02T15:04:05Z")
-			item.Source = meta.Source
-			item.Type = meta.Type
-			item.RepoURL = meta.RepoURL
-			item.Version = meta.Version
-			item.Branch = meta.Branch
+		if entry := s.skillsStore.Get(filepath.Base(d.SourcePath)); entry != nil {
+			if !entry.InstalledAt.IsZero() {
+				item.InstalledAt = entry.InstalledAt.Format("2006-01-02T15:04:05Z")
+			}
+			item.Source = entry.Source
+			item.Type = entry.Type
+			item.RepoURL = entry.RepoURL
+			item.Version = entry.Version
+			item.Branch = entry.Branch
 		}
 		enrichSkillBranch(&item)
 
