@@ -839,7 +839,7 @@ function SkillDetailDialog({
       {/* Link to skill detail page */}
       <div className="mt-4 pt-3 border-t border-dashed border-pencil-light/30">
         <Link
-          to={`/skills/${encodeURIComponent(skill.name)}`}
+          to={`/resources/${encodeURIComponent(skill.name)}`}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-info hover:underline"
         >
           View Skill Detail

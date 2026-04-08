@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"skillshare/internal/config"
+	"skillshare/internal/resource"
 	ssync "skillshare/internal/sync"
 )
 
@@ -12,12 +14,14 @@ type syncMatrixEntry struct {
 	Target string `json:"target"`
 	Status string `json:"status"`
 	Reason string `json:"reason"`
+	Kind   string `json:"kind,omitempty"`
 }
 
 func (s *Server) handleSyncMatrix(w http.ResponseWriter, r *http.Request) {
 	// Snapshot config under RLock, then release before I/O.
 	s.mu.RLock()
 	source := s.cfg.Source
+	agentsSource := s.agentsSource()
 	targets := s.cloneTargets()
 	s.mu.RUnlock()
 
@@ -27,6 +31,13 @@ func (s *Server) handleSyncMatrix(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var agents []resource.DiscoveredResource
+	if agentsSource != "" {
+		discovered, _ := resource.AgentKind{}.Discover(agentsSource)
+		agents = resource.ActiveAgents(discovered)
+	}
+	builtinAgents := config.DefaultAgentTargets()
+
 	targetFilter := r.URL.Query().Get("target")
 
 	var entries []syncMatrixEntry
@@ -34,6 +45,7 @@ func (s *Server) handleSyncMatrix(w http.ResponseWriter, r *http.Request) {
 		if targetFilter != "" && name != targetFilter {
 			continue
 		}
+		// Skills
 		sc := target.SkillsConfig()
 		if sc.Mode == "symlink" {
 			for _, skill := range skills {
@@ -44,15 +56,36 @@ func (s *Server) handleSyncMatrix(w http.ResponseWriter, r *http.Request) {
 					Reason: "symlink mode — filters not applicable",
 				})
 			}
+		} else {
+			for _, skill := range skills {
+				status, reason := ssync.ClassifySkillForTarget(skill.FlatName, skill.Targets, name, sc.Include, sc.Exclude)
+				entries = append(entries, syncMatrixEntry{
+					Skill:  skill.FlatName,
+					Target: name,
+					Status: status,
+					Reason: reason,
+				})
+			}
+		}
+		// Agents — resolve path from user config or builtin defaults
+		ac := target.AgentsConfig()
+		agentPath := ac.Path
+		if agentPath == "" {
+			if builtin, ok := builtinAgents[name]; ok {
+				agentPath = builtin.Path
+			}
+		}
+		if agentPath == "" || len(agents) == 0 {
 			continue
 		}
-		for _, skill := range skills {
-			status, reason := ssync.ClassifySkillForTarget(skill.FlatName, skill.Targets, name, sc.Include, sc.Exclude)
+		for _, agent := range agents {
+			status, reason := ssync.ClassifySkillForTarget(agent.FlatName, nil, name, ac.Include, ac.Exclude)
 			entries = append(entries, syncMatrixEntry{
-				Skill:  skill.FlatName,
+				Skill:  agent.FlatName,
 				Target: name,
 				Status: status,
 				Reason: reason,
+				Kind:   "agent",
 			})
 		}
 	}

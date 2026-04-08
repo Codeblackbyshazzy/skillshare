@@ -68,7 +68,7 @@ const SKILL_PASTELS_DARK = [
 
 /* -- Shared skill action items hook --------------- */
 
-type SkillsData = { skills: Skill[] };
+type SkillsData = { resources: Skill[] };
 
 /** Optimistic update helper: patch skills cache and return rollback snapshot. */
 function optimisticPatch(
@@ -80,7 +80,7 @@ function optimisticPatch(
   if (previous) {
     queryClient.setQueryData<SkillsData>(queryKeys.skills.all, {
       ...previous,
-      skills: patchFn(previous.skills),
+      resources: patchFn(previous.resources),
     });
   }
   return previous;
@@ -181,7 +181,7 @@ function useSkillActions() {
         key: 'detail',
         label: 'View Detail',
         icon: <ExternalLink size={13} strokeWidth={2.5} />,
-        onSelect: () => navigate(`/skills/${encodeURIComponent(skill.flatName)}`),
+        onSelect: () => navigate(`/resources/${encodeURIComponent(skill.flatName)}`),
       },
       {
         key: 'toggle',
@@ -585,7 +585,7 @@ const SkillPostit = memo(function SkillPostit({
 
   return (
     <Link
-      to={`/skills/${encodeURIComponent(skill.flatName)}`}
+      to={`/resources/${encodeURIComponent(skill.flatName)}`}
       className={`w-full h-full${skill.disabled ? ' opacity-50' : ''}`}
       onContextMenu={onContextMenu}
     >
@@ -751,7 +751,7 @@ export default function SkillsPage() {
   } | null>(null);
   const [gridConfirmUninstallRepo, setGridConfirmUninstallRepo] = useState<string | null>(null);
 
-  const skills = data?.skills ?? [];
+  const skills = data?.resources ?? [];
 
   // Compute counts for each filter type — scoped to the active tab
   const filterCounts = useMemo(() => {
@@ -810,7 +810,7 @@ export default function SkillsPage() {
         subtitle=""
         className="mb-4!"
         actions={
-          <Link to="/skills/new">
+          <Link to="/resources/new">
             <Button variant="primary" size="sm">
               <Plus size={16} strokeWidth={2.5} />
               New Skill
@@ -1306,7 +1306,7 @@ function FolderTreeView({ skills, totalCount, isSearching, stickyTop = 0, onClea
       >
         <Tooltip content={tooltipContent} followCursor delay={1000}>
           <Link
-            to={`/skills/${encodeURIComponent(skill.flatName)}`}
+            to={`/resources/${encodeURIComponent(skill.flatName)}`}
             className={`relative flex items-center gap-1.5 py-1 px-1 hover:bg-muted/50 transition-colors no-underline${skill.disabled ? ' opacity-40' : ''}${contextMenu?.mode === 'skill' && contextMenu.skillFlatName === skill.flatName ? ' bg-muted/50' : ''}`}
             style={{ paddingLeft: node.depth * INDENT_PX + 4 }}
           >
@@ -1585,7 +1585,7 @@ function SkillsTable({ skills }: { skills: Skill[] }) {
                     <div className="flex items-center gap-2">
                       <div className="min-w-0 flex-1">
                         <Link
-                          to={`/skills/${encodeURIComponent(skill.flatName)}`}
+                          to={`/resources/${encodeURIComponent(skill.flatName)}`}
                           className="font-medium text-pencil hover:underline block truncate"
                         >
                           {skill.name}

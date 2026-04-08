@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"skillshare/internal/audit"
+	"skillshare/internal/resource"
 	"skillshare/internal/sync"
 	"skillshare/internal/utils"
 )
@@ -288,6 +289,7 @@ func (s *Server) handleAuditSkill(w http.ResponseWriter, r *http.Request) {
 	// Snapshot config under RLock, then release before I/O.
 	s.mu.RLock()
 	source := s.cfg.Source
+	agentsSource := s.agentsSource()
 	policy := s.auditPolicy()
 	projectRoot := s.projectRoot
 	cfgPath := s.configPath()
@@ -297,22 +299,46 @@ func (s *Server) handleAuditSkill(w http.ResponseWriter, r *http.Request) {
 
 	start := time.Now()
 	name := r.PathValue("name")
+	kind := r.URL.Query().Get("kind")
 	threshold := policy.Threshold
-	skillPath := filepath.Join(source, name)
-
-	if _, err := os.Stat(skillPath); os.IsNotExist(err) {
-		writeError(w, http.StatusNotFound, "skill not found: "+name)
-		return
-	}
 
 	var (
 		result *audit.Result
 		err    error
 	)
-	if isProjectMode {
-		result, err = audit.ScanSkillForProject(skillPath, projectRoot)
+
+	if kind == "agent" {
+		// Resolve agent file path via discovery
+		var agentPath string
+		if agentsSource != "" {
+			discovered, _ := resource.AgentKind{}.Discover(agentsSource)
+			for _, d := range discovered {
+				if d.FlatName == name || d.Name == name {
+					agentPath = d.AbsPath
+					break
+				}
+			}
+		}
+		if agentPath == "" {
+			writeError(w, http.StatusNotFound, "agent not found: "+name)
+			return
+		}
+		if isProjectMode {
+			result, err = audit.ScanFileForProject(agentPath, projectRoot)
+		} else {
+			result, err = audit.ScanFile(agentPath)
+		}
 	} else {
-		result, err = audit.ScanSkill(skillPath)
+		skillPath := filepath.Join(source, name)
+		if _, statErr := os.Stat(skillPath); os.IsNotExist(statErr) {
+			writeError(w, http.StatusNotFound, "skill not found: "+name)
+			return
+		}
+		if isProjectMode {
+			result, err = audit.ScanSkillForProject(skillPath, projectRoot)
+		} else {
+			result, err = audit.ScanSkill(skillPath)
+		}
 	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())

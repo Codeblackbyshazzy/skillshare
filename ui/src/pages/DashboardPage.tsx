@@ -321,7 +321,7 @@ export default function DashboardPage() {
             </div>
           </Link>
 
-          <Link to="/skills" className="h-full">
+          <Link to="/resources" className="h-full">
             <div
               className="flex items-center gap-3 px-5 py-4 h-full bg-success-light border-2 border-pencil transition-all duration-100 hover:translate-x-[2px] hover:translate-y-[2px] cursor-pointer group"
               style={{

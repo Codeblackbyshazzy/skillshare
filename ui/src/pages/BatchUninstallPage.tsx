@@ -93,7 +93,7 @@ export default function BatchUninstallPage() {
     queryFn: () => api.listSkills(),
     staleTime: staleTimes.skills,
   });
-  const skills = data?.skills ?? [];
+  const skills = data?.resources ?? [];
 
   // Filter state
   const [group, setGroup] = useState('(all)');

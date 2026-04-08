@@ -119,7 +119,7 @@ func (s *Server) handleListSkills(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, map[string]any{"skills": items})
+	writeJSON(w, map[string]any{"resources": items})
 }
 
 func (s *Server) handleGetSkill(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +193,7 @@ func (s *Server) handleGetSkill(w http.ResponseWriter, r *http.Request) {
 		})
 
 		writeJSON(w, map[string]any{
-			"skill":          item,
+			"resource":       item,
 			"skillMdContent": skillMdContent,
 			"files":          files,
 		})
@@ -233,7 +233,7 @@ func (s *Server) handleGetSkill(w http.ResponseWriter, r *http.Request) {
 			}
 
 			writeJSON(w, map[string]any{
-				"skill":          item,
+				"resource":       item,
 				"skillMdContent": string(data),
 				"files":          []string{filepath.Base(d.RelPath)},
 			})

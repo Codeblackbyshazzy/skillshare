@@ -358,17 +358,17 @@ func (s *Server) registerRoutes() {
 	// Overview
 	s.mux.HandleFunc("GET /api/overview", s.handleOverview)
 
-	// Skills
-	s.mux.HandleFunc("GET /api/skills", s.handleListSkills)
-	s.mux.HandleFunc("GET /api/skills/templates", s.handleGetTemplates)
-	s.mux.HandleFunc("POST /api/skills", s.handleCreateSkill)
-	s.mux.HandleFunc("GET /api/skills/{name}", s.handleGetSkill)
-	s.mux.HandleFunc("GET /api/skills/{name}/files/{filepath...}", s.handleGetSkillFile)
-	s.mux.HandleFunc("POST /api/skills/{name}/disable", s.handleDisableSkill)
-	s.mux.HandleFunc("POST /api/skills/{name}/enable", s.handleEnableSkill)
-	s.mux.HandleFunc("DELETE /api/skills/{name}", s.handleUninstallSkill)
-	s.mux.HandleFunc("POST /api/skills/batch/targets", s.handleBatchSetTargets)
-	s.mux.HandleFunc("PATCH /api/skills/{name}/targets", s.handleSetSkillTargets)
+	// Resources (skills + agents)
+	s.mux.HandleFunc("GET /api/resources", s.handleListSkills)
+	s.mux.HandleFunc("GET /api/resources/templates", s.handleGetTemplates)
+	s.mux.HandleFunc("POST /api/resources", s.handleCreateSkill)
+	s.mux.HandleFunc("GET /api/resources/{name}", s.handleGetSkill)
+	s.mux.HandleFunc("GET /api/resources/{name}/files/{filepath...}", s.handleGetSkillFile)
+	s.mux.HandleFunc("POST /api/resources/{name}/disable", s.handleDisableSkill)
+	s.mux.HandleFunc("POST /api/resources/{name}/enable", s.handleEnableSkill)
+	s.mux.HandleFunc("DELETE /api/resources/{name}", s.handleUninstallSkill)
+	s.mux.HandleFunc("POST /api/resources/batch/targets", s.handleBatchSetTargets)
+	s.mux.HandleFunc("PATCH /api/resources/{name}/targets", s.handleSetSkillTargets)
 
 	// Targets
 	s.mux.HandleFunc("GET /api/targets", s.handleListTargets)

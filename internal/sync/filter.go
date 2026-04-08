@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"skillshare/internal/config"
+	"skillshare/internal/resource"
 )
 
 // FilterSkills filters discovered skills by include/exclude patterns.
@@ -20,6 +21,23 @@ func FilterSkills(skills []DiscoveredSkill, include, exclude []string) ([]Discov
 	for _, skill := range skills {
 		if shouldSyncFlatName(skill.FlatName, includePatterns, excludePatterns) {
 			filtered = append(filtered, skill)
+		}
+	}
+
+	return filtered, nil
+}
+
+// FilterAgents filters discovered agents by include/exclude patterns.
+func FilterAgents(agents []resource.DiscoveredResource, include, exclude []string) ([]resource.DiscoveredResource, error) {
+	includePatterns, excludePatterns, err := normalizedFilterPatterns(include, exclude)
+	if err != nil {
+		return nil, err
+	}
+
+	filtered := make([]resource.DiscoveredResource, 0, len(agents))
+	for _, agent := range agents {
+		if shouldSyncFlatName(agent.FlatName, includePatterns, excludePatterns) {
+			filtered = append(filtered, agent)
 		}
 	}
 

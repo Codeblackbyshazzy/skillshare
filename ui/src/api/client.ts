@@ -117,6 +117,7 @@ export interface SyncMatrixEntry {
   target: string;
   status: 'synced' | 'excluded' | 'not_included' | 'skill_target_mismatch' | 'na';
   reason: string;
+  kind?: 'skill' | 'agent';
 }
 
 // Typed API helpers
@@ -124,21 +125,21 @@ export const api = {
   // Overview
   getOverview: () => apiFetch<Overview>('/overview'),
 
-  // Skills
+  // Resources (skills + agents)
   listSkills: (kind?: 'skill' | 'agent') =>
-    apiFetch<{ skills: Skill[] }>(kind ? `/skills?kind=${kind}` : '/skills'),
+    apiFetch<{ resources: Skill[] }>(kind ? `/resources?kind=${kind}` : '/resources'),
   getSkill: (name: string) =>
-    apiFetch<{ skill: Skill; skillMdContent: string; files: string[] }>(`/skills/${encodeURIComponent(name)}`),
+    apiFetch<{ resource: Skill; skillMdContent: string; files: string[] }>(`/resources/${encodeURIComponent(name)}`),
   deleteSkill: (name: string) =>
-    apiFetch<{ success: boolean }>(`/skills/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+    apiFetch<{ success: boolean }>(`/resources/${encodeURIComponent(name)}`, { method: 'DELETE' }),
   disableSkill: (name: string) =>
     apiFetch<{ success: boolean; name: string; disabled: boolean }>(
-      `/skills/${encodeURIComponent(name)}/disable`,
+      `/resources/${encodeURIComponent(name)}/disable`,
       { method: 'POST' }
     ),
   enableSkill: (name: string) =>
     apiFetch<{ success: boolean; name: string; disabled: boolean }>(
-      `/skills/${encodeURIComponent(name)}/enable`,
+      `/resources/${encodeURIComponent(name)}/enable`,
       { method: 'POST' }
     ),
   batchUninstall: (opts: BatchUninstallRequest) =>
@@ -147,7 +148,7 @@ export const api = {
       body: JSON.stringify(opts),
     }),
   getTemplates: async () => {
-    const res = await apiFetch<TemplatesResponse>('/skills/templates');
+    const res = await apiFetch<TemplatesResponse>('/resources/templates');
     // Normalize: Go omits nil slices, so scaffoldDirs may be undefined
     for (const p of res.patterns) {
       if (!p.scaffoldDirs) p.scaffoldDirs = [];
@@ -155,17 +156,17 @@ export const api = {
     return res;
   },
   createSkill: (data: CreateSkillRequest) =>
-    apiFetch<CreateSkillResponse>('/skills', {
+    apiFetch<CreateSkillResponse>('/resources', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
   batchSetTargets: (folder: string, target: string | null) =>
-    apiFetch<{ updated: number; skipped: number; errors: string[] }>('/skills/batch/targets', {
+    apiFetch<{ updated: number; skipped: number; errors: string[] }>('/resources/batch/targets', {
       method: 'POST',
       body: JSON.stringify({ folder, target: target ?? '' }),
     }),
   setSkillTargets: (name: string, target: string | null) =>
-    apiFetch<{ success: boolean }>(`/skills/${encodeURIComponent(name)}/targets`, {
+    apiFetch<{ success: boolean }>(`/resources/${encodeURIComponent(name)}/targets`, {
       method: 'PATCH',
       body: JSON.stringify({ target: target ?? '' }),
     }),
@@ -301,7 +302,7 @@ export const api = {
 
   // Skill file content
   getSkillFile: (skillName: string, filepath: string) =>
-    apiFetch<SkillFileContent>(`/skills/${encodeURIComponent(skillName)}/files/${filepath}`),
+    apiFetch<SkillFileContent>(`/resources/${encodeURIComponent(skillName)}/files/${filepath}`),
 
   // Collect
   collectScan: (target?: string) =>
@@ -411,7 +412,8 @@ export const api = {
 
   // Audit
   auditAll: () => apiFetch<AuditAllResponse>('/audit'),
-  auditSkill: (name: string) => apiFetch<AuditSkillResponse>(`/audit/${encodeURIComponent(name)}`),
+  auditSkill: (name: string, kind?: 'skill' | 'agent') =>
+    apiFetch<AuditSkillResponse>(`/audit/${encodeURIComponent(name)}${kind === 'agent' ? '?kind=agent' : ''}`),
   auditAllStream: (
     onStart: (total: number) => void,
     onProgress: (scanned: number) => void,

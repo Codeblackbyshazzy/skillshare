@@ -93,7 +93,15 @@ func syncAgentsGlobal(cfg *config.Config, dryRun, force, jsonOutput bool, start 
 
 		tc := cfg.Targets[name]
 		ac := tc.AgentsConfig()
-		stats, targetErr := syncAgentTarget(name, agentPath, ac.Mode, agents, agentsSource, dryRun, force, jsonOutput)
+		filtered, filterErr := sync.FilterAgents(agents, ac.Include, ac.Exclude)
+		if filterErr != nil {
+			if !jsonOutput {
+				ui.Error("%s: invalid agent filter: %v", name, filterErr)
+			}
+			syncErr = fmt.Errorf("some agent targets failed to sync")
+			continue
+		}
+		stats, targetErr := syncAgentTarget(name, agentPath, ac.Mode, filtered, agentsSource, dryRun, force, jsonOutput)
 		if targetErr != nil {
 			syncErr = fmt.Errorf("some agent targets failed to sync")
 		}
@@ -214,7 +222,15 @@ func syncAgentsProject(projectRoot string, dryRun, force, jsonOutput bool, start
 		targetCount++
 
 		ac := entry.AgentsConfig()
-		stats, targetErr := syncAgentTarget(entry.Name, agentPath, ac.Mode, agents, agentsSource, dryRun, force, jsonOutput)
+		filtered, filterErr := sync.FilterAgents(agents, ac.Include, ac.Exclude)
+		if filterErr != nil {
+			if !jsonOutput {
+				ui.Error("%s: invalid agent filter: %v", entry.Name, filterErr)
+			}
+			syncErr = fmt.Errorf("some agent targets failed to sync")
+			continue
+		}
+		stats, targetErr := syncAgentTarget(entry.Name, agentPath, ac.Mode, filtered, agentsSource, dryRun, force, jsonOutput)
 		if targetErr != nil {
 			syncErr = fmt.Errorf("some agent targets failed to sync")
 		}
