@@ -24,7 +24,7 @@ func (s *Server) handleAuditStream(w http.ResponseWriter, r *http.Request) {
 
 	// Snapshot config under RLock, then release before slow I/O.
 	s.mu.RLock()
-	source := s.cfg.Source
+	source, resultKind := s.resolveAuditSource(r)
 	projectRoot := s.projectRoot
 	policy := s.auditPolicy()
 	s.mu.RUnlock()
@@ -70,6 +70,9 @@ func (s *Server) handleAuditStream(w http.ResponseWriter, r *http.Request) {
 
 	// 4. Process results
 	agg := processAuditResults(skills, outputs, policy)
+	for i := range agg.Results {
+		agg.Results[i].Kind = resultKind
+	}
 	s.writeAuditLog(agg.Status, start, agg.LogArgs, agg.Message)
 
 	// 5. Send final result (no concurrent writers at this point)

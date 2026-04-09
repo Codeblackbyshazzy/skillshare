@@ -251,10 +251,19 @@ func processAuditResults(skills []skillEntry, scanned []audit.ScanOutput, policy
 	}
 }
 
+// resolveAuditSource returns the source directory and result kind based on ?kind query param.
+func (s *Server) resolveAuditSource(r *http.Request) (string, string) {
+	kind := r.URL.Query().Get("kind")
+	if kind == "agents" {
+		return s.agentsSource(), "agent"
+	}
+	return s.cfg.Source, "skill"
+}
+
 func (s *Server) handleAuditAll(w http.ResponseWriter, r *http.Request) {
 	// Snapshot config under RLock, then release before I/O.
 	s.mu.RLock()
-	source := s.cfg.Source
+	source, resultKind := s.resolveAuditSource(r)
 	policy := s.auditPolicy()
 	projectRoot := s.projectRoot
 	cfgPath := s.configPath()
@@ -277,6 +286,9 @@ func (s *Server) handleAuditAll(w http.ResponseWriter, r *http.Request) {
 	scanned := audit.ParallelScan(skillsToAuditInputs(skills), auditProjectRoot, nil, nil)
 
 	agg := processAuditResults(skills, scanned, policy)
+	for i := range agg.Results {
+		agg.Results[i].Kind = resultKind
+	}
 	writeAuditLogTo(cfgPath, agg.Status, start, agg.LogArgs, agg.Message)
 
 	writeJSON(w, map[string]any{
@@ -674,6 +686,7 @@ func toAuditResponse(result *audit.Result) auditResultResponse {
 	}
 	return auditResultResponse{
 		SkillName:      result.SkillName,
+		Kind:           result.Kind,
 		Findings:       findings,
 		RiskScore:      result.RiskScore,
 		RiskLabel:      result.RiskLabel,
