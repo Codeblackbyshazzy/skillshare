@@ -84,10 +84,13 @@ func compactAuditPath(name string) string {
 	return strings.Join(segments, "/")
 }
 
-// auditRepoKey extracts the grouping key from a skill name.
+// auditRepoKey extracts the grouping key from a skill/agent name.
+// For tracked repos: "_repo-name/skill" → "_repo-name"
+// For nested agents: "demo/code-reviewer.md" → "demo"
+// For flat names: "my-skill" → "" (standalone)
 func auditRepoKey(name string) string {
 	segments := strings.Split(name, "/")
-	if strings.HasPrefix(segments[0], "_") {
+	if len(segments) > 1 {
 		return segments[0]
 	}
 	return ""
