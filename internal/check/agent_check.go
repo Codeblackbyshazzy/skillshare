@@ -3,6 +3,7 @@ package check
 import (
 	"path/filepath"
 
+	"skillshare/internal/git"
 	"skillshare/internal/install"
 	"skillshare/internal/resource"
 	"skillshare/internal/utils"
@@ -10,12 +11,13 @@ import (
 
 // AgentCheckResult holds the check result for a single agent.
 type AgentCheckResult struct {
-	Name    string `json:"name"`
-	Source  string `json:"source,omitempty"`
-	Version string `json:"version,omitempty"`
-	RepoURL string `json:"repoUrl,omitempty"`
-	Status  string `json:"status"` // "up_to_date", "drifted", "local", "error", "update_available"
-	Message string `json:"message,omitempty"`
+	Name     string `json:"name"`
+	Source   string `json:"source,omitempty"`
+	Version  string `json:"version,omitempty"`
+	RepoURL  string `json:"repoUrl,omitempty"`
+	RepoPath string `json:"repoPath,omitempty"`
+	Status   string `json:"status"` // "up_to_date", "drifted", "dirty", "local", "error", "update_available"
+	Message  string `json:"message,omitempty"`
 }
 
 // CheckAgents scans the agents source directory for installed agents and
@@ -43,10 +45,45 @@ func CheckAgents(agentsDir string) []AgentCheckResult {
 			continue
 		}
 		result := checkOneAgent(store, d.SourcePath, d.RelPath)
+		if d.RepoRelPath != "" {
+			result = checkTrackedAgentRepo(agentsDir, d)
+		}
 		results = append(results, result)
 	}
 
 	return results
+}
+
+func checkTrackedAgentRepo(agentsDir string, d resource.DiscoveredResource) AgentCheckResult {
+	result := AgentCheckResult{
+		Name:     d.RelPath[:len(d.RelPath)-len(".md")],
+		RepoPath: filepath.Join(agentsDir, filepath.FromSlash(d.RepoRelPath)),
+	}
+
+	if !install.IsGitRepo(result.RepoPath) {
+		result.Status = "local"
+		return result
+	}
+
+	repoURL, _ := git.GetRemoteURL(result.RepoPath)
+	version, _ := git.GetCurrentFullHash(result.RepoPath)
+	result.Source = repoURL
+	result.RepoURL = repoURL
+	result.Version = version
+
+	if repoURL == "" || version == "" {
+		result.Status = "local"
+		return result
+	}
+
+	if isDirty, _ := git.IsDirty(result.RepoPath); isDirty {
+		result.Status = "dirty"
+		result.Message = "tracked repo has uncommitted changes"
+		return result
+	}
+
+	result.Status = "up_to_date"
+	return result
 }
 
 // checkOneAgent checks a single agent file against the centralized metadata store.

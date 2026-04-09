@@ -73,18 +73,23 @@ func (AgentKind) Discover(sourceDir string) ([]DiscoveredResource, error) {
 		disabled := ignoreMatcher.HasRules() && ignoreMatcher.Match(relPath, false)
 
 		name := agentNameFromFile(path, info.Name())
+		targets := utils.ParseFrontmatterList(path, "targets")
 
 		isNested := strings.Contains(relPath, "/")
+		repoRelPath := findTrackedRepoRelPath(walkRoot, relPath)
 
 		resources = append(resources, DiscoveredResource{
-			Name:       name,
-			Kind:       "agent",
-			RelPath:    relPath,
-			AbsPath:    path,
-			IsNested:   isNested,
-			Disabled:   disabled,
-			FlatName:   AgentFlatName(relPath),
-			SourcePath: filepath.Join(sourceDir, relPath),
+			Name:        name,
+			Kind:        "agent",
+			RelPath:     relPath,
+			AbsPath:     path,
+			IsNested:    isNested,
+			IsInRepo:    repoRelPath != "",
+			RepoRelPath: repoRelPath,
+			Disabled:    disabled,
+			FlatName:    AgentFlatName(relPath),
+			SourcePath:  filepath.Join(sourceDir, relPath),
+			Targets:     targets,
 		})
 
 		return nil
@@ -95,6 +100,27 @@ func (AgentKind) Discover(sourceDir string) ([]DiscoveredResource, error) {
 	}
 
 	return resources, nil
+}
+
+func findTrackedRepoRelPath(root, relPath string) string {
+	dir := filepath.Dir(relPath)
+	if dir == "." || dir == "" {
+		return ""
+	}
+
+	parts := strings.Split(filepath.ToSlash(dir), "/")
+	for i, part := range parts {
+		if !utils.IsTrackedRepoDir(part) {
+			continue
+		}
+		candidate := strings.Join(parts[:i+1], "/")
+		gitDir := filepath.Join(root, filepath.FromSlash(candidate), ".git")
+		if info, err := os.Stat(gitDir); err == nil && info.IsDir() {
+			return candidate
+		}
+	}
+
+	return ""
 }
 
 // agentNameFromFile resolves an agent name. Checks frontmatter name field

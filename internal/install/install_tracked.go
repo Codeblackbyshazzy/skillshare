@@ -32,9 +32,12 @@ func installTrackedRepoImpl(source *Source, sourceDir string, opts InstallOption
 	destBase := sourceDir
 	if opts.Into != "" {
 		destBase = filepath.Join(sourceDir, opts.Into)
-		if err := os.MkdirAll(destBase, 0755); err != nil {
+	}
+	if err := os.MkdirAll(destBase, 0755); err != nil {
+		if opts.Into != "" {
 			return nil, fmt.Errorf("failed to create --into directory: %w", err)
 		}
+		return nil, fmt.Errorf("failed to create source directory: %w", err)
 	}
 	destPath := filepath.Join(destBase, trackedName)
 
@@ -89,7 +92,11 @@ func installTrackedRepoImpl(source *Source, sourceDir string, opts InstallOption
 
 	// Also discover agents in the tracked repo
 	agents := discoverAgents(destPath, len(skills) > 0)
+	result.AgentCount = len(agents)
 	if len(agents) > 0 {
+		for _, agent := range agents {
+			result.Agents = append(result.Agents, agent.Name)
+		}
 		result.Warnings = append(result.Warnings, fmt.Sprintf("%d agent(s) found in tracked repo", len(agents)))
 	}
 
@@ -155,7 +162,11 @@ func updateTrackedRepo(repoPath string, result *TrackedRepoResult, opts InstallO
 
 	// Also discover agents in the tracked repo
 	agents := discoverAgents(repoPath, len(skills) > 0)
+	result.AgentCount = len(agents)
 	if len(agents) > 0 {
+		for _, agent := range agents {
+			result.Agents = append(result.Agents, agent.Name)
+		}
 		result.Warnings = append(result.Warnings, fmt.Sprintf("%d agent(s) found in tracked repo", len(agents)))
 	}
 

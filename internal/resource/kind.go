@@ -37,15 +37,17 @@ type ResourceKind interface {
 // DiscoveredResource represents a resource found during source directory scan.
 // Used for both skills and agents.
 type DiscoveredResource struct {
-	Name       string // Canonical name (from frontmatter or filename)
-	Kind       string // "skill" or "agent"
-	RelPath    string // Relative path from source root
-	AbsPath    string // Full absolute path
-	IsNested   bool   // Whether this resource is inside a subdirectory
-	FlatName   string // Flattened name for target directories
-	IsInRepo   bool   // Whether this resource is inside a tracked repo
-	Disabled   bool   // Whether this resource is ignored by ignore file
-	SourcePath string // Full path preserving caller's logical path (may differ from AbsPath if symlinked)
+	Name        string   // Canonical name (from frontmatter or filename)
+	Kind        string   // "skill" or "agent"
+	RelPath     string   // Relative path from source root
+	AbsPath     string   // Full absolute path
+	IsNested    bool     // Whether this resource is inside a subdirectory
+	FlatName    string   // Flattened name for target directories
+	IsInRepo    bool     // Whether this resource is inside a tracked repo
+	RepoRelPath string   // Relative path of the tracked repo root (when IsInRepo)
+	Disabled    bool     // Whether this resource is ignored by ignore file
+	SourcePath  string   // Full path preserving caller's logical path (may differ from AbsPath if symlinked)
+	Targets     []string // Per-resource target restrictions from frontmatter (nil = all targets)
 }
 
 // ConventionalExcludes are filenames excluded from agent discovery.

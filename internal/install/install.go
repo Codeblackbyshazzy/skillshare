@@ -102,6 +102,8 @@ type TrackedRepoResult struct {
 	RepoPath       string   // Full path to the repo
 	SkillCount     int      // Number of skills discovered
 	Skills         []string // Names of discovered skills
+	AgentCount     int      // Number of agents discovered
+	Agents         []string // Names of discovered agents
 	Action         string   // "cloned", "updated", "skipped"
 	Warnings       []string
 	AuditThreshold string
@@ -217,6 +219,38 @@ func DiscoverFromGitSubdir(source *Source) (*DiscoveryResult, error) {
 // the source subdir while optionally streaming git progress output.
 func DiscoverFromGitSubdirWithProgress(source *Source, onProgress ProgressCallback) (*DiscoveryResult, error) {
 	return discoverFromGitSubdirWithProgressImpl(source, onProgress)
+}
+
+// InferTrackedKind determines which resource kind a tracked install should use.
+// Pure-agent repositories resolve to "agent". Mixed repositories must specify
+// the kind explicitly to avoid ambiguous install roots.
+func InferTrackedKind(source *Source, explicitKind string) (string, error) {
+	if explicitKind == "skill" || explicitKind == "agent" {
+		return explicitKind, nil
+	}
+
+	var (
+		discovery *DiscoveryResult
+		err       error
+	)
+	if source.HasSubdir() {
+		discovery, err = DiscoverFromGitSubdir(source)
+	} else {
+		discovery, err = DiscoverFromGit(source)
+	}
+	if err != nil {
+		return "", err
+	}
+	defer CleanupDiscovery(discovery)
+
+	switch {
+	case discovery.HasSkills() && discovery.HasAgents():
+		return "", fmt.Errorf("tracked install is ambiguous for mixed repositories; pass --kind skill or --kind agent")
+	case discovery.HasAgents() && !discovery.HasSkills():
+		return "agent", nil
+	default:
+		return "skill", nil
+	}
 }
 
 // DiscoverLocal inspects a local directory and discovers skills and agents.
