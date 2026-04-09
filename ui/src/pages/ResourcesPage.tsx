@@ -1489,7 +1489,11 @@ function FolderTreeView({ skills, resourceKind, totalCount, isSearching, stickyT
           >
             <FolderOpen size={16} strokeWidth={2.5} className="text-pencil-light shrink-0" />
             <span className={`font-semibold text-sm${stickyFolder.node.isRoot ? ' text-pencil-light' : ' text-pencil'}`}>
-              {stickyFolder.node.path || '(root)'}
+              {stickyFolder.node.path
+                ? (stickyFolder.node.path.startsWith('_')
+                    ? <><Badge variant="default" size="sm">Track</Badge> {formatTrackedRepoName(stickyFolder.node.path)}</>
+                    : formatSkillDisplayName(stickyFolder.node.path))
+                : '(root)'}
             </span>
             <span
               className="text-xs text-pencil-light px-1.5 py-0 bg-muted shrink-0 ml-1"
