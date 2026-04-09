@@ -377,7 +377,8 @@ func checkTargets(cfg *config.Config, result *doctorResult, isProject bool) map[
 	agentsExist := dirExists(agentsSource)
 	var discoveredAgents []resource.DiscoveredResource
 	if agentsExist {
-		discoveredAgents, _ = resource.AgentKind{}.Discover(agentsSource)
+		all, _ := resource.AgentKind{}.Discover(agentsSource)
+		discoveredAgents = resource.ActiveAgents(all)
 	}
 	builtinAgents := config.DefaultAgentTargets()
 	if isProject {
