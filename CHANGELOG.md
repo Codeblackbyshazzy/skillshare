@@ -4,6 +4,15 @@
 
 ### Bug Fixes
 
+- **Orchestrator repos no longer copy the entire repository** — installing a multi-skill repo with a root `SKILL.md` (e.g. `skillshare install user/project`) previously copied the entire repo root into the root skill directory, including source code, assets, CI configs, and build scripts. Now the root skill installs only its `SKILL.md`, and each child skill installs as an independent flat directory. Refs: #124
+  ```
+  # Before: skills/MyProject/ contained the entire repo
+  # After:
+  skills/MyProject/SKILL.md       ← root skill (SKILL.md only)
+  skills/child-a/...              ← independent child
+  skills/child-b/...              ← independent child
+  ```
+
 - **Structured output no longer corrupted by update notices** — `--json`, `-j`, and `--format json/sarif/markdown` modes could emit a trailing human-readable update notification into stdout, producing invalid JSON for downstream consumers. The update check is now skipped entirely in structured-output modes, and the notification itself writes to stderr as a safety net. Refs: #129
 
 ## [0.19.0] - 2026-04-11

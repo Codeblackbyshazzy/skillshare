@@ -374,13 +374,26 @@ func installFromDiscoveryImpl(discovery *DiscoveryResult, skill SkillInfo, destP
 		srcPath = filepath.Join(sourceRoot, skill.Path)
 	}
 
-	// In an orchestrator-style repo (root SKILL.md + children), copying the
-	// root would otherwise drag every child skill directory into the root
-	// install. Exclude any other discovered skill whose path is a strict
-	// descendant of the skill currently being installed (issue #124).
+	// In a repo-root orchestrator (root SKILL.md + children), the root skill
+	// has no directory boundary — the entire repo root is its "directory",
+	// which includes project infrastructure (src/, assets/, CI, etc.) that
+	// is not skill content. Copy only the SKILL.md file itself.
+	//
+	// Do not apply this to scoped subdir discovery: there the selected subdir
+	// is the boundary, so sibling files in that subdir are legitimate skill
+	// content and must still be copied.
 	excludes := descendantSkillPaths(discovery, skill)
+	rootIsRepoRoot := skill.Path == "." && discovery.Source != nil && !discovery.Source.HasSubdir()
 
-	if err := copyDirExcluding(srcPath, destPath, excludes); err != nil {
+	if rootIsRepoRoot && excludes != nil {
+		// Repo-root orchestrator: copy only SKILL.md (no directory boundary).
+		if err := os.MkdirAll(destPath, 0755); err != nil {
+			return nil, fmt.Errorf("failed to create destination: %w", err)
+		}
+		if err := copyFile(filepath.Join(srcPath, "SKILL.md"), filepath.Join(destPath, "SKILL.md")); err != nil {
+			return nil, fmt.Errorf("failed to copy SKILL.md: %w", err)
+		}
+	} else if err := copyDirExcluding(srcPath, destPath, excludes); err != nil {
 		return nil, fmt.Errorf("failed to copy skill: %w", err)
 	}
 

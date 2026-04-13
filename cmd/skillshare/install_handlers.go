@@ -429,27 +429,7 @@ func installSelectedSkills(selected []install.SkillInfo, discovery *install.Disc
 		}
 	}
 
-	// Detect orchestrator: if root skill (path=".") is selected, children nest under it
-	var parentName string
-	var rootIdx = -1
 	for i, skill := range selected {
-		if skill.Path == "." {
-			parentName = skill.Name
-			rootIdx = i
-			break
-		}
-	}
-
-	// Reorder: install root skill first so children nest under it on disk.
-	orderedSkills := selected
-	if rootIdx > 0 {
-		orderedSkills = make([]install.SkillInfo, 0, len(selected))
-		orderedSkills = append(orderedSkills, selected[rootIdx])
-		orderedSkills = append(orderedSkills, selected[:rootIdx]...)
-		orderedSkills = append(orderedSkills, selected[rootIdx+1:]...)
-	}
-
-	for i, skill := range orderedSkills {
 		if installSpinner != nil {
 			installSpinner.NextStep(fmt.Sprintf("Installing %s...", skill.Name))
 			if i == 0 {
@@ -460,28 +440,12 @@ func installSelectedSkills(selected []install.SkillInfo, discovery *install.Disc
 			progressBar.UpdateTitle(fmt.Sprintf("Installing %s", skill.Name))
 		}
 
-		// Determine destination path and effective --into for force hints.
-		// Orchestrator repos: when the root skill is also selected, children
-		// install as siblings under <parentName>/ so they remain independent
-		// skills discoverable by sync (issue #124). The root copy excludes
-		// child skill directories so they do not duplicate.
-		var destPath string
+		// Determine destination path. Each skill installs independently
+		// at the top level (or under --into if specified). Root orchestrator
+		// skills (Path=".") get only their SKILL.md copied (handled in
+		// install_apply.go), so no nesting is needed.
+		destPath := destWithInto(cfg.Source, opts, skill.Name)
 		skillOpts := opts
-		if skill.Path == "." {
-			// Root skill - install directly
-			destPath = destWithInto(cfg.Source, opts, skill.Name)
-		} else if parentName != "" {
-			// Child skill with parent selected - nest under parent group
-			effectiveInto := parentName
-			if opts.Into != "" {
-				effectiveInto = filepath.Join(opts.Into, parentName)
-			}
-			skillOpts.Into = effectiveInto
-			destPath = destWithInto(cfg.Source, opts, filepath.Join(parentName, skill.Name))
-		} else {
-			// Standalone child skill - install to root
-			destPath = destWithInto(cfg.Source, opts, skill.Name)
-		}
 
 		installResult, err := install.InstallFromDiscovery(discovery, skill, destPath, skillOpts)
 		if err != nil {

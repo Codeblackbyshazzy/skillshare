@@ -499,37 +499,44 @@ func TestCheckSkillFile_Missing(t *testing.T) {
 }
 
 // TestInstallFromDiscovery_Orchestrator_RootExcludesChildren verifies issue
-// #124: installing a root skill of an orchestrator repo must not drag child
-// skill directories into the root install. Each child must install to its own
-// directory as an independent skill.
+// #124 against an OfficeCLI-like repo-root orchestrator layout: installing the
+// root skill must copy only SKILL.md (the root has no directory boundary) and
+// must not drag repo infrastructure or child skill directories into the root
+// install. Each child must still be installable independently.
 func TestInstallFromDiscovery_Orchestrator_RootExcludesChildren(t *testing.T) {
 	tmp := t.TempDir()
-	repoDir := filepath.Join(tmp, "orchestrator")
+	repoDir := filepath.Join(tmp, "OfficeCLI")
 	os.MkdirAll(repoDir, 0755)
 
 	// Layout:
-	//   SKILL.md                  (root skill)
+	//   SKILL.md                      (root skill)
 	//   README.md
-	//   src/helper.go             (root-owned asset)
-	//   skills/child-a/SKILL.md   (child skill)
-	//   skills/child-b/SKILL.md   (child skill)
+	//   assets/logo.png              (repo asset)
+	//   src/officecli/main.py        (project source)
+	//   styles/theme.css             (repo styling)
+	//   skills/pptx/SKILL.md         (child skill)
+	//   skills/docx/SKILL.md         (child skill)
 	os.WriteFile(filepath.Join(repoDir, "SKILL.md"),
-		[]byte("---\nname: orchestrator\n---\n# Root"), 0644)
+		[]byte("---\nname: OfficeCLI\n---\n# OfficeCLI"), 0644)
 	os.WriteFile(filepath.Join(repoDir, "README.md"), []byte("readme"), 0644)
-	os.MkdirAll(filepath.Join(repoDir, "src"), 0755)
-	os.WriteFile(filepath.Join(repoDir, "src", "helper.go"), []byte("package main"), 0644)
-	os.MkdirAll(filepath.Join(repoDir, "skills", "child-a"), 0755)
-	os.WriteFile(filepath.Join(repoDir, "skills", "child-a", "SKILL.md"),
-		[]byte("---\nname: child-a\n---\n# A"), 0644)
-	os.MkdirAll(filepath.Join(repoDir, "skills", "child-b"), 0755)
-	os.WriteFile(filepath.Join(repoDir, "skills", "child-b", "SKILL.md"),
-		[]byte("---\nname: child-b\n---\n# B"), 0644)
+	os.MkdirAll(filepath.Join(repoDir, "assets"), 0755)
+	os.WriteFile(filepath.Join(repoDir, "assets", "logo.png"), []byte("png"), 0644)
+	os.MkdirAll(filepath.Join(repoDir, "src", "officecli"), 0755)
+	os.WriteFile(filepath.Join(repoDir, "src", "officecli", "main.py"), []byte("print('officecli')"), 0644)
+	os.MkdirAll(filepath.Join(repoDir, "styles"), 0755)
+	os.WriteFile(filepath.Join(repoDir, "styles", "theme.css"), []byte("body { color: black; }"), 0644)
+	os.MkdirAll(filepath.Join(repoDir, "skills", "pptx"), 0755)
+	os.WriteFile(filepath.Join(repoDir, "skills", "pptx", "SKILL.md"),
+		[]byte("---\nname: pptx\n---\n# PPTX"), 0644)
+	os.MkdirAll(filepath.Join(repoDir, "skills", "docx"), 0755)
+	os.WriteFile(filepath.Join(repoDir, "skills", "docx", "SKILL.md"),
+		[]byte("---\nname: docx\n---\n# DOCX"), 0644)
 
 	source := &Source{
 		Type: SourceTypeLocalPath,
 		Raw:  repoDir,
 		Path: repoDir,
-		Name: "orchestrator",
+		Name: "OfficeCLI",
 	}
 
 	discovery, err := DiscoverLocal(source)
@@ -559,29 +566,25 @@ func TestInstallFromDiscovery_Orchestrator_RootExcludesChildren(t *testing.T) {
 	}
 
 	// Install the root skill first.
-	rootDest := filepath.Join(tmp, "dest", "orchestrator")
+	rootDest := filepath.Join(tmp, "dest", "OfficeCLI")
 	if _, err := InstallFromDiscovery(discovery, *root, rootDest,
 		InstallOptions{SourceDir: filepath.Join(tmp, "dest"), SkipAudit: true}); err != nil {
 		t.Fatalf("root install failed: %v", err)
 	}
 
-	// Root dest MUST contain its own files and non-skill subdirs.
-	for _, rel := range []string{
-		"SKILL.md",
-		"README.md",
-		filepath.Join("src", "helper.go"),
-	} {
-		if _, err := os.Stat(filepath.Join(rootDest, rel)); err != nil {
-			t.Errorf("expected %q in root install, got %v", rel, err)
-		}
+	// Root dest MUST contain only SKILL.md (no directory boundary).
+	if _, err := os.Stat(filepath.Join(rootDest, "SKILL.md")); err != nil {
+		t.Errorf("expected SKILL.md in root install, got %v", err)
 	}
 
-	// Root dest MUST NOT contain child skill directories or their SKILL.md.
+	// Root dest MUST NOT contain repo infrastructure or child skill dirs.
 	for _, rel := range []string{
-		filepath.Join("skills", "child-a"),
-		filepath.Join("skills", "child-b"),
-		filepath.Join("skills", "child-a", "SKILL.md"),
-		filepath.Join("skills", "child-b", "SKILL.md"),
+		"README.md",
+		filepath.Join("assets", "logo.png"),
+		filepath.Join("src", "officecli", "main.py"),
+		filepath.Join("styles", "theme.css"),
+		filepath.Join("skills", "pptx"),
+		filepath.Join("skills", "docx"),
 	} {
 		if _, err := os.Stat(filepath.Join(rootDest, rel)); !os.IsNotExist(err) {
 			t.Errorf("expected %q to be excluded from root install, but it exists (err=%v)",
@@ -599,5 +602,64 @@ func TestInstallFromDiscovery_Orchestrator_RootExcludesChildren(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(childDest, "SKILL.md")); err != nil {
 			t.Errorf("expected child %q SKILL.md at %q, got %v", child.Name, childDest, err)
 		}
+	}
+}
+
+// TestInstallFromDiscovery_SubdirRootPreservesSiblingFiles verifies that a
+// discovered root skill inside a scoped subdir still copies that subdir's
+// sibling files. Only descendant child skill directories should be excluded.
+func TestInstallFromDiscovery_SubdirRootPreservesSiblingFiles(t *testing.T) {
+	tmp := t.TempDir()
+	repoRoot := filepath.Join(tmp, "repo")
+	subdir := filepath.Join(repoRoot, "packs", "frontend")
+	childDir := filepath.Join(subdir, "child-a")
+
+	if err := os.MkdirAll(childDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(subdir, "SKILL.md"),
+		[]byte("---\nname: frontend\n---\n# Frontend"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(subdir, "README.md"), []byte("frontend readme"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(subdir, "config.yaml"), []byte("theme: light"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(childDir, "SKILL.md"),
+		[]byte("---\nname: child-a\n---\n# Child A"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	discovery := &DiscoveryResult{
+		RepoPath: tmp,
+		Skills: []SkillInfo{
+			{Name: "frontend", Path: "."},
+			{Name: "child-a", Path: "child-a"},
+		},
+		Source: &Source{
+			Type:     SourceTypeGitHTTPS,
+			Raw:      "file://" + repoRoot + "/packs/frontend",
+			CloneURL: "file://" + repoRoot,
+			Subdir:   "packs/frontend",
+			Name:     "frontend",
+		},
+	}
+
+	destPath := filepath.Join(tmp, "dest", "frontend")
+	if _, err := InstallFromDiscovery(discovery, discovery.Skills[0], destPath,
+		InstallOptions{SourceDir: filepath.Join(tmp, "dest"), SkipAudit: true}); err != nil {
+		t.Fatalf("subdir root install failed: %v", err)
+	}
+
+	for _, rel := range []string{"SKILL.md", "README.md", "config.yaml"} {
+		if _, err := os.Stat(filepath.Join(destPath, rel)); err != nil {
+			t.Errorf("expected %q in subdir root install, got %v", rel, err)
+		}
+	}
+
+	if _, err := os.Stat(filepath.Join(destPath, "child-a")); !os.IsNotExist(err) {
+		t.Errorf("expected child skill directory to be excluded from subdir root install, err=%v", err)
 	}
 }
