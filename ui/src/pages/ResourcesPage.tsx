@@ -1056,12 +1056,14 @@ export default function SkillsPage() {
         )
       ) : (
         <EmptyState
-          icon={Puzzle}
-          title={search || filterType !== 'all' ? 'No matches' : 'No skills yet'}
+          icon={activeTab === 'agents' ? Bot : Puzzle}
+          title={search || filterType !== 'all' ? 'No matches' : activeTab === 'agents' ? 'No agents yet' : 'No skills yet'}
           description={
             search || filterType !== 'all'
               ? 'Try a different search term or filter.'
-              : 'Install skills from GitHub or add them to your source directory.'
+              : activeTab === 'agents'
+                ? 'Install agents from GitHub or add them to your source directory.'
+                : 'Install skills from GitHub or add them to your source directory.'
           }
         />
       )}
